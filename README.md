@@ -41,6 +41,24 @@ Each episode consists of structured dialogue turns requiring the agent to interp
 
 ---
 
+## Benchmark Pipeline
+
+End-to-end workflow of the α³-Bench framework for evaluating LLM-based UAV agents under dynamic 6G communication conditions. The figure illustrates scenario initialization from UAVBench, dialogue-based mission execution with network-aware reasoning, structured action invocation via MCP and A2A protocols, environment and state updates, loop termination, and final efficiency- and reliability-adjusted $\alpha^3$ evaluation metrics.
+
+![Example multi-turn UAV mission under 6G conditions](Figures/Figure2.drawio_page-0001.jpg)
+
+---
+
+## Conversational UAV Mission Example (6G-Adaptive Control)
+
+An example agent--user interaction trajectory in the UAV domain of α³-Bench under 6G communication. 
+The left panel illustrates user--agent interactions via the Model Context Protocol (MCP), where the UAV state is queried and a thermal area-scan mission is initiated over a 6G eMBB slice. 
+The right panel highlights the agent’s adaptive decision-making under dynamic network conditions, including coordination with other autonomous agents through the agent-to-agent (A2A) protocol for collision avoidance, and seamless switching between eMBB, URLLC, and mMTC 6G network slices to preserve safety and mission continuity. 
+
+![α³-Bench conversational evaluation pipeline](Figures/Figure1.jpg)
+
+---
+
 ## Data Format
 Episodes are provided in **JSON** format:
 
@@ -661,6 +679,58 @@ Episodes are provided in **JSON** format:
 - Communication efficiency  
 
 Full evaluation methodology is described in the accompanying paper.
+
+---
+
+---
+
+## LLM Benchmark Results
+
+### Mean Performance
+![Mean score across models](Figures/figure1a_uav_mean_score.png)
+
+Figure reports the mean task score achieved by each model across all evaluated UAV scenarios, reflecting the average correctness and coherence of model responses during mission execution. The results show that most modern LLMs achieve very high mean scores, with all models exceeding 0.93. GPT-5.1-chat achieves the highest mean score of 0.991, followed by GPT-5.2-chat at 0.986. ChatGPT-4o-latest and Qwen3-max both reach a mean score of 0.976, while GPT-4.1-mini follows closely with 0.975. DeepSeek-v3.2 (0.968), DeepSeek-v3.2-exp (0.965), and Gemini-2.5-Flash-Preview-09-2025 (0.963) also demonstrate strong performance. Even the lowest-ranked model, Claude-Haiku-4.5, maintains a mean score of 0.931. These results indicate that mean score quickly saturates for state-of-the-art models and therefore offers limited discrimination in isolation.
+
+
+### α³ Macro Score
+![α³ macro score comparison](Figures/figure1b_uav_alpha3_macro.png)
+
+Figure presents the $\alpha^3$ macro score, which integrates reasoning quality, reliability, coverage, and efficiency into a single metric. Unlike the mean score, this measure reveals substantial performance variation across models. ChatGPT-4o-latest achieves the highest $\alpha^3$ macro score of 0.976, followed by Claude-Sonnet-4.5 at 0.949 and Qwen3-max at 0.921. Mistral-Large-2512 (0.888) and Qwen3-235b-a22b-2507 (0.881) form a second performance tier. Despite achieving the highest mean score, GPT-5.1-chat records a lower $\alpha^3$ macro score of 0.825, indicating reduced efficiency or higher resource consumption. GPT-5.2-chat further drops to 0.514, while Gemini-2.5-Flash-Preview-09-2025 (0.460), DeepSeek-v3.2-exp (0.429), and DeepSeek-v3.2 (0.310) exhibit significantly weaker holistic performance. Gemini-3-Pro-Preview ranks last with an $\alpha^3$ macro score of only 0.174.
+
+
+---
+
+## Reliability and Failure Analysis
+
+### Reliability, Coverage, and Success Rate
+![Reliability, coverage, success](Figures/figure2a_uav_reliability.png)
+
+Figure illustrates the reliability, coverage, and success rate achieved by the evaluated LLM agents. Several models demonstrate near-perfect robustness across all three metrics. Claude-Sonnet-4.5, GPT-4.1-mini, and Qwen3-Max achieve reliability and coverage scores of 1.00, together with a success rate of 1.00, indicating fully stable mission execution. GPT-5.1-chat and ChatGPT-4o-latest similarly maintain a success rate of $1.00$ while preserving reliability above $0.99$, highlighting strong consistency under multi-turn autonomous UAV control.
+
+A second performance tier is visible in Figure for models such as Claude-Opus-4.5 and Mistral-Medium-3.1, which achieve reliability values close to $0.98$ while still sustaining a success rate of 1.00. In contrast, more efficiency-oriented or lightweight models exhibit a noticeable degradation. DeepSeek-v3.2 records reliability and coverage scores of approximately $0.66$, while Gemini-3-Pro-Preview drops further to $0.52$. Although these models report a nominal success rate of $1.00$, their reduced reliability and coverage indicate unstable behavior across complete mission executions.
+
+### Generation Failure Rate
+![Generation failure rate](Figures/figure2b_uav_failure_rate.png)
+
+Figure (b) reports the generation failure rate for each model, offering a complementary view of execution robustness. The highest failure rate is observed for Gemini-3-Pro-Preview at $0.48$, followed by DeepSeek-v3.2 at $0.34$ and DeepSeek-v3.2-exp at $0.20$. These elevated failure rates directly explain the reduced reliability and coverage levels previously observed in the previous Figure.
+
+Moderate failure rates are measured for GPT-5.2-chat (0.14), Kimi-K2-Thinking (0.12), and Gemini-2.5-Flash-Preview-09-2025 (0.12), indicating partial instability under longer conversational trajectories. In contrast, a large subset of models—including GPT-5.1-chat, ChatGPT-4o-latest, Claude-Haiku-4.5, Claude-Sonnet-4.5, and Qwen3-235B-A22B-2507—exhibit a zero generation failure rate in Figure, confirming strong robustness. Overall, these findings emphasize that minimizing generation failures is essential for achieving reliable and well-covered autonomous UAV mission execution.
+
+---
+
+## Efficiency Analysis
+
+### Mean Generation Time
+![Mean generation time](Figures/figure4a_uav_time.png)
+
+### Mean Token Usage
+![Mean token usage](Figures/figure4b_uav_tokens.png)
+
+### α³ Efficiency (Time)
+![α³ per second efficiency](Figures/figure3b_uav_efficiency_time.png)
+
+### α³ Efficiency (Tokens)
+![α³ per 1K tokens efficiency](Figures/figure3a_uav_efficiency_tokens.png)
 
 ---
 
