@@ -42,11 +42,19 @@ Each episode consists of structured dialogue turns requiring the agent to interp
 ---
 
 ## Benchmark Pipeline
+
+End-to-end workflow of the α³-Bench framework for evaluating LLM-based UAV agents under dynamic 6G communication conditions. The figure illustrates scenario initialization from UAVBench, dialogue-based mission execution with network-aware reasoning, structured action invocation via MCP and A2A protocols, environment and state updates, loop termination, and final efficiency- and reliability-adjusted $\alpha^3$ evaluation metrics.
+
 ![Example multi-turn UAV mission under 6G conditions](Figures/Figure2.drawio_page-0001.jpg)
 
 ---
 
 ## Conversational UAV Mission Example (6G-Adaptive Control)
+
+An example agent--user interaction trajectory in the UAV domain of α³-Bench under 6G communication. 
+The left panel illustrates user--agent interactions via the Model Context Protocol (MCP), where the UAV state is queried and a thermal area-scan mission is initiated over a 6G eMBB slice. 
+The right panel highlights the agent’s adaptive decision-making under dynamic network conditions, including coordination with other autonomous agents through the agent-to-agent (A2A) protocol for collision avoidance, and seamless switching between eMBB, URLLC, and mMTC 6G network slices to preserve safety and mission continuity. 
+
 ![α³-Bench conversational evaluation pipeline](Figures/Figure1.jpg)
 
 ---
