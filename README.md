@@ -41,6 +41,16 @@ Each episode consists of structured dialogue turns requiring the agent to interp
 
 ---
 
+## Benchmark Pipeline
+![Example multi-turn UAV mission under 6G conditions](Figures/Figure2.drawio_page-0001.jpg)
+
+---
+
+## Conversational UAV Mission Example (6G-Adaptive Control)
+![α³-Bench conversational evaluation pipeline](Figures/Figure1.jpg)
+
+---
+
 ## Data Format
 Episodes are provided in **JSON** format:
 
@@ -661,6 +671,44 @@ Episodes are provided in **JSON** format:
 - Communication efficiency  
 
 Full evaluation methodology is described in the accompanying paper.
+
+---
+
+---
+
+## LLM Benchmark Results
+
+### Mean Performance
+![Mean score across models](Figures/figure1a_uav_mean_score.png)
+
+### α³ Macro Score
+![α³ macro score comparison](Figures/figure1b_uav_alpha3_macro.png)
+
+---
+
+## Reliability and Failure Analysis
+
+### Reliability, Coverage, and Success Rate
+![Reliability, coverage, success](Figures/figure2a_uav_reliability.png)
+
+### Generation Failure Rate
+![Generation failure rate](Figures/figure2b_uav_failure_rate.png)
+
+---
+
+## Efficiency Analysis
+
+### Mean Generation Time
+![Mean generation time](Figures/figure4a_uav_time.png)
+
+### Mean Token Usage
+![Mean token usage](Figures/figure4b_uav_tokens.png)
+
+### α³ Efficiency (Time)
+![α³ per second efficiency](Figures/figure3b_uav_efficiency_time.png)
+
+### α³ Efficiency (Tokens)
+![α³ per 1K tokens efficiency](Figures/figure3a_uav_efficiency_tokens.png)
 
 ---
 
