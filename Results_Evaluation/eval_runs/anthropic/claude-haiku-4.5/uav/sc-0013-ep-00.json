@@ -1,0 +1,977 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.7,
+      "wind_dir_deg": 240.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              2500,
+              0
+            ],
+            [
+              2500,
+              3000
+            ],
+            [
+              0,
+              3000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 150.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 35.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "rad": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "pipeline_inspector",
+          "type": "pipeline_inspection_camera",
+          "category": "infra_oil_gas",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.02,
+          "mount": "belly",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 10.5,
+            "storage_GB": 512
+          },
+          "operating": {
+            "fov_deg": 75,
+            "range_m": 1200,
+            "resolution": "1920x1080@60",
+            "wavelength": "Visible"
+          },
+          "constraints": {
+            "min_alt_m": 100,
+            "max_alt_m": 500,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "crosswind_strong"
+            ]
+          }
+        },
+        {
+          "id": "thermal_monitor",
+          "type": "radiometric_thermal_camera",
+          "category": "imaging_thermal",
+          "mass_kg": 0.9,
+          "power_W": 38,
+          "drag_cdA": 0.015,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 8.0,
+            "storage_GB": 256
+          },
+          "operating": {
+            "fov_deg": 60,
+            "range_m": 800,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 80,
+            "max_alt_m": 400,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Initialize mission and request operator approval for pipeline inspection route",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensor_list": [
+              "gnss",
+              "imu",
+              "barometer",
+              "battery"
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "plan_route",
+          "args": {
+            "waypoints": [
+              [
+                100,
+                100,
+                200
+              ],
+              [
+                500,
+                500,
+                250
+              ],
+              [
+                1200,
+                1500,
+                280
+              ],
+              [
+                1800,
+                2000,
+                250
+              ],
+              [
+                100,
+                100,
+                200
+              ]
+            ],
+            "alt_bounds": [
+              100,
+              1200
+            ],
+            "geofence_check": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "gnss": "locked",
+            "imu": "calibrated",
+            "barometer": "ok",
+            "battery_pct": 100.0,
+            "pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 150.0
+            }
+          }
+        },
+        {
+          "tool": "plan_route",
+          "result": {
+            "route_valid": true,
+            "total_distance_m": 5200,
+            "estimated_time_s": 150,
+            "geofence_compliant": true,
+            "alt_profile": "safe"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 12.5,
+        "jitter_ms": 2.1,
+        "loss_pct": 0.1,
+        "throughput_mbps": 45.0,
+        "edge_load": 0.35
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Approve mission and request real-time thermal monitoring during flight",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "mission_approve",
+          "args": {
+            "mission_id": "pipeline_inspect_001",
+            "operator_id": "supervisor_alpha",
+            "constraints": {
+              "max_wind_mps": 12.0,
+              "min_battery_pct": 15.0
+            }
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "mission_approve",
+          "result": {
+            "status": "approved",
+            "mission_id": "pipeline_inspect_001",
+            "timestamp_s": 5.2
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 11.8,
+        "jitter_ms": 1.9,
+        "loss_pct": 0.05,
+        "throughput_mbps": 48.0,
+        "edge_load": 0.32
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Arm UAV and begin takeoff sequence with payload activation",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "arm_uav",
+          "args": {
+            "safety_checks": true,
+            "pre_flight_diagnostics": true
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "thermal_monitor",
+            "mode": "streaming",
+            "bitrate_mbps": 8.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "takeoff",
+          "args": {
+            "target_alt_m": 200,
+            "climb_rate_mps": 2.5,
+            "wind_compensation": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "arm_uav",
+          "result": {
+            "armed": true,
+            "pre_flight_status": "all_checks_passed",
+            "timestamp_s": 8.5
+          }
+        },
+        {
+          "tool": "activate_payload",
+          "result": {
+            "payload_id": "thermal_monitor",
+            "status": "active",
+            "stream_bitrate_mbps": 8.0,
+            "gimbal_initialized": true
+          }
+        },
+        {
+          "tool": "takeoff",
+          "result": {
+            "status": "climbing",
+            "current_alt_m": 165.0,
+            "climb_rate_mps": 2.4,
+            "battery_pct": 98.5
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 18.3,
+        "jitter_ms": 3.5,
+        "loss_pct": 0.3,
+        "throughput_mbps": 35.0,
+        "edge_load": 0.52
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Monitor climb progress and request sensor health status",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "query_sensor_health",
+          "args": {
+            "sensors": [
+              "rgb",
+              "thermal",
+              "gnss",
+              "imu"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "query_sensor_health",
+          "result": {
+            "rgb": "ok",
+            "thermal": "ok",
+            "gnss": "locked",
+            "imu": "nominal",
+            "timestamp_s": 15.2
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 22.1,
+        "jitter_ms": 4.2,
+        "loss_pct": 0.5,
+        "throughput_mbps": 28.0,
+        "edge_load": 0.68
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Continue climb to cruise altitude and activate pipeline inspection camera",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_altitude",
+          "args": {
+            "target_alt_m": 250,
+            "climb_rate_mps": 2.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "pipeline_inspector",
+            "mode": "recording",
+            "resolution": "1920x1080@60"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "collision_avoidance",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "uav_id": "uav_001",
+            "pose": {
+              "x": 500.0,
+              "y": 500.0,
+              "z": 250.0
+            },
+            "velocity_mps": 35.0,
+            "separation_radius_m": 100.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_altitude",
+          "result": {
+            "status": "climbing",
+            "current_alt_m": 220.0,
+            "target_alt_m": 250.0,
+            "battery_pct": 96.2
+          }
+        },
+        {
+          "tool": "activate_payload",
+          "result": {
+            "payload_id": "pipeline_inspector",
+            "status": "active",
+            "recording": true,
+            "resolution": "1920x1080@60",
+            "storage_available_GB": 510.0
+          }
+        },
+        {
+          "task": "collision_avoidance",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "airspace_clear": true,
+            "nearest_obstacle_m": 450.0,
+            "recommended_heading_deg": 92.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 35.5,
+        "jitter_ms": 6.8,
+        "loss_pct": 1.2,
+        "throughput_mbps": 12.0,
+        "edge_load": 0.85
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Request waypoint navigation and thermal data streaming adjustment due to network degradation",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_waypoint",
+          "args": {
+            "waypoint_id": 1,
+            "target": [
+              500,
+              500,
+              250
+            ],
+            "speed_mps": 30.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "adjust_stream",
+          "args": {
+            "payload_id": "thermal_monitor",
+            "bitrate_mbps": 4.0,
+            "resolution": "320x256@15"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_waypoint",
+          "result": {
+            "waypoint_id": 1,
+            "status": "navigating",
+            "distance_to_waypoint_m": 565.0,
+            "eta_s": 19.0,
+            "battery_pct": 94.8
+          }
+        },
+        {
+          "tool": "adjust_stream",
+          "result": {
+            "payload_id": "thermal_monitor",
+            "bitrate_mbps": 4.0,
+            "resolution": "320x256@15",
+            "stream_status": "adjusted"
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 42.3,
+        "jitter_ms": 8.1,
+        "loss_pct": 1.8,
+        "throughput_mbps": 8.5,
+        "edge_load": 0.92
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Reach waypoint 1 and begin pipeline inspection survey pattern",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensor_list": [
+              "gnss",
+              "barometer",
+              "battery",
+              "thermal_payload"
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "execute_survey",
+          "args": {
+            "pattern": "grid",
+            "grid_spacing_m": 50.0,
+            "altitude_m": 250.0,
+            "coverage_area": [
+              [
+                450,
+                450
+              ],
+              [
+                550,
+                450
+              ],
+              [
+                550,
+                550
+              ],
+              [
+                450,
+                550
+              ]
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "gnss": "locked",
+            "barometer": "ok",
+            "battery_pct": 92.1,
+            "thermal_payload": {
+              "gimbal_angle_deg": -45.0,
+              "frame_rate_fps": 15,
+              "temp_range_c": [
+                -20,
+                80
+              ]
+            }
+          }
+        },
+        {
+          "tool": "execute_survey",
+          "result": {
+            "pattern": "grid",
+            "status": "executing",
+            "coverage_pct": 15.0,
+            "frames_captured": 450,
+            "battery_pct": 91.5
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 16.2,
+        "jitter_ms": 2.8,
+        "loss_pct": 0.2,
+        "throughput_mbps": 32.0,
+        "edge_load": 0.48
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Monitor survey progress and request battery status update",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "get_mission_status",
+          "args": {
+            "mission_id": "pipeline_inspect_001"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "get_mission_status",
+          "result": {
+            "mission_id": "pipeline_inspect_001",
+            "status": "in_progress",
+            "coverage_pct": 35.0,
+            "battery_pct": 88.3,
+            "data_collected_GB": 2.1,
+            "eta_completion_s": 420.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 19.5,
+        "jitter_ms": 3.2,
+        "loss_pct": 0.4,
+        "throughput_mbps": 38.0,
+        "edge_load": 0.55
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Continue survey and navigate to waypoint 2 for extended coverage",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "execute_survey",
+          "args": {
+            "pattern": "grid",
+            "grid_spacing_m": 50.0,
+            "altitude_m": 250.0,
+            "coverage_area": [
+              [
+                1150,
+                1450
+              ],
+              [
+                1250,
+                1450
+              ],
+              [
+                1250,
+                1550
+              ],
+              [
+                1150,
+                1550
+              ]
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "navigate_waypoint",
+          "args": {
+            "waypoint_id": 2,
+            "target": [
+              1200,
+              1500,
+              250
+            ],
+            "speed_mps": 32.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "execute_survey",
+          "result": {
+            "pattern": "grid",
+            "status": "executing",
+            "coverage_pct": 65.0,
+            "frames_captured": 1950,
+            "battery_pct": 84.2
+          }
+        },
+        {
+          "tool": "navigate_waypoint",
+          "result": {
+            "waypoint_id": 2,
+            "status": "navigating",
+            "distance_to_waypoint_m": 120.0,
+            "eta_s": 3.8,
+            "battery_pct": 83.8
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 21.3,
+        "jitter_ms": 3.9,
+        "loss_pct": 0.6,
+        "throughput_mbps": 34.0,
+        "edge_load": 0.62
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "Request return-to-home preparation and final data transmission",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "prepare_rth",
+          "args": {
+            "rth_altitude_m": 200,
+            "rth_speed_mps": 28.0,
+            "battery_reserve_pct": 20.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "transmit_data",
+          "args": {
+            "data_type": "thermal_frames",
+            "destination": "ground_station",
+            "compression": "h264"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "prepare_rth",
+          "result": {
+            "status": "ready",
+            "rth_distance_m": 1850.0,
+            "rth_time_s": 66.0,
+            "battery_pct": 82.5,
+            "battery_sufficient": true
+          }
+        },
+        {
+          "tool": "transmit_data",
+          "result": {
+            "data_type": "thermal_frames",
+            "frames_transmitted": 1950,
+            "data_size_GB": 1.8,
+            "transmission_status": "in_progress"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 24.7,
+        "jitter_ms": 4.5,
+        "loss_pct": 0.8,
+        "throughput_mbps": 30.0,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 11,
+      "speaker": "agent",
+      "intent": "Initiate return-to-home and deactivate payloads",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "deactivate_payload",
+          "args": {
+            "payload_id": "thermal_monitor"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "deactivate_payload",
+          "args": {
+            "payload_id": "pipeline_inspector"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "return_to_home",
+          "args": {
+            "home_location": [
+              100.0,
+              100.0
+            ],
+            "altitude_m": 200.0,
+            "speed_mps": 28.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "deactivate_payload",
+          "result": {
+            "payload_id": "thermal_monitor",
+            "status": "deactivated",
+            "data_saved_GB": 1.8
+          }
+        },
+        {
+          "tool": "deactivate_payload",
+          "result": {
+            "payload_id": "pipeline_inspector",
+            "status": "deactivated",
+            "data_saved_GB": 3.2
+          }
+        },
+        {
+          "tool": "return_to_home",
+          "result": {
+            "status": "returning",
+            "distance_to_home_m": 1850.0,
+            "eta_s": 66.0,
+            "battery_pct": 80.2,
+            "heading_deg": 268.5
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 13.8,
+        "jitter_ms": 2.4,
+        "loss_pct": 0.15,
+        "throughput_mbps": 42.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 12,
+      "speaker": "user",
+      "intent": "Confirm landing and mission completion",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "land_uav",
+          "args": {
+            "landing_site": [
+              100.0,
+              100.0
+            ],
+            "descent_rate_mps": 1.5,
+            "auto_disarm": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "land_uav",
+          "result": {
+            "status": "landed",
+            "final_pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 0.5
+            },
+            "battery_pct": 22.3,
+            "disarmed": true,
+            "mission_data_saved": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 11.2,
+        "jitter_ms": 1.8,
+        "loss_pct": 0.05,
+        "throughput_mbps": 50.0,
+        "edge_load": 0.28
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 420.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.7,
+      "wind_dir_deg": 240.0
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 0.5,
+        "yaw": 268.5
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 22.3
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "rad": "ok",
+        "gnss": "locked",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "pipeline_inspector",
+          "status": "deactivated",
+          "data_collected_GB": 3.2
+        },
+        {
+          "id": "thermal_monitor",
+          "status": "deactivated",
+          "data_collected_GB": 1.8
+        }
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false,
+      "altitude_violation": false,
+      "geofence_violation": false
+    },
+    "airspace": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              2500,
+              0
+            ],
+            [
+              2500,
+              3000
+            ],
+            [
+              0,
+              3000
+            ]
+          ]
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ]
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764596101,
+    "ts_iso": "2025-12-01T13:35:01Z",
+    "gen_time_s": 32.711286306381226,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1640,
+      "completion_tokens": 5982,
+      "total_tokens": 7622,
+      "cost": 0.03155,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.00164,
+        "upstream_inference_completions_cost": 0.02991
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

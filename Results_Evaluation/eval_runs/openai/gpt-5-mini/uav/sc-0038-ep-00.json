@@ -1,0 +1,701 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        150.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1000.0,
+              0.0
+            ],
+            [
+              1000.0,
+              800.0
+            ],
+            [
+              0.0,
+              800.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 50.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 22.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.45,
+          "power_W": 35,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 8.0,
+            "storage_GB": 64
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 150,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "fog",
+              "icing_conditions"
+            ]
+          }
+        },
+        {
+          "type": "rgb_camera",
+          "category": "imaging_optical",
+          "mass_kg": 0.3,
+          "power_W": 20,
+          "drag_cdA": 0.008,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 12.0,
+            "storage_GB": 128
+          },
+          "operating": {
+            "fov_deg": 75,
+            "resolution": "1920x1080@60"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 200,
+            "day_night": "day"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        150.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "plan_route_and_prepare_sensors",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "plan_route",
+          "args": {
+            "waypoints": [
+              {
+                "x": 900.0,
+                "y": 700.0,
+                "z": 60.0
+              },
+              {
+                "x": 200.0,
+                "y": 400.0,
+                "z": 60.0
+              }
+            ],
+            "altitude_m": 60.0,
+            "speed_mps": 18.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "plan_route",
+          "result": {
+            "status": "ok",
+            "route_id": "RTE-001",
+            "eta_s": 1200,
+            "flight_distance_m": 1600
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 15.0,
+        "jitter_ms": 2.0,
+        "loss_pct": 0.1,
+        "throughput_mbps": 200.0,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "approve_route_monitor_icing",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "approve_mission",
+          "args": {
+            "route_id": "RTE-001",
+            "priority": "standard",
+            "note": "monitor icing conditions, prefer thermal imaging"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "approve_mission",
+          "result": {
+            "status": "approved",
+            "timestamp_s": 5.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5.0,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.05,
+        "throughput_mbps": 50.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "set_flight_params_and_notify_swarm",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_flight_params",
+          "args": {
+            "route_id": "RTE-001",
+            "cruise_speed_mps": 18.0,
+            "cruise_alt_m": 60.0,
+            "sensor_priority": "thermal"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "collision_avoidance",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "route_id": "RTE-001",
+            "intent": "deconflict",
+            "timestamp_s": 12.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_flight_params",
+          "result": {
+            "status": "acknowledged",
+            "applied": {
+              "cruise_speed_mps": 18.0,
+              "cruise_alt_m": 60.0,
+              "sensor_priority": "thermal"
+            }
+          }
+        },
+        {
+          "task": "collision_avoidance",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "conflict_free": true,
+            "message": "routes deconflicted for RTE-001"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3.0,
+        "jitter_ms": 0.8,
+        "loss_pct": 0.2,
+        "throughput_mbps": 10.0,
+        "edge_load": 0.6
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "request_payload_mode_thermal_priority",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "request_payload_mode",
+          "args": {
+            "mode": "thermal_priority",
+            "thermal_bitrate_mbps": 4.0,
+            "rgb_bitrate_mbps": 2.0,
+            "rationale": "icing conditions; emphasize thermal monitoring"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "request_payload_mode",
+          "result": {
+            "status": "received",
+            "requested_mode": "thermal_priority"
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 20.0,
+        "jitter_ms": 5.0,
+        "loss_pct": 1.0,
+        "throughput_mbps": 3.0,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "adapt_streams_for_degraded_link",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_payload_stream",
+          "args": {
+            "thermal_camera_lwir": {
+              "bitrate_mbps": 4.0,
+              "stream": "video"
+            },
+            "rgb_camera": {
+              "bitrate_mbps": 2.0,
+              "stream": "reduced"
+            }
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "defer_rgb_stream",
+          "args": {
+            "action": "thumbnail_only",
+            "reason": "preserve control and telemetry bandwidth under high loss"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_payload_stream",
+          "result": {
+            "status": "applied",
+            "thermal_bitrate_mbps": 4.0,
+            "rgb_bitrate_mbps": 2.0
+          }
+        },
+        {
+          "tool": "defer_rgb_stream",
+          "result": {
+            "status": "ok",
+            "mode": "thumbnail_only"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 80.0,
+        "jitter_ms": 12.0,
+        "loss_pct": 6.0,
+        "throughput_mbps": 5.0,
+        "edge_load": 0.85
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "check_battery_and_request_return",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "query_battery",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "query_battery",
+          "result": {
+            "battery_pct": 78.0,
+            "timestamp_s": 220.0,
+            "estimate_time_to_rtb_s": 900
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 40.0,
+        "jitter_ms": 8.0,
+        "loss_pct": 8.0,
+        "throughput_mbps": 10.0,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "reroute_to_base_reduce_speed",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to",
+          "args": {
+            "destination": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 20.0
+            },
+            "speed_mps": 12.0,
+            "reason": "return_to_base_battery_conservation"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to",
+          "result": {
+            "status": "accepted",
+            "new_route_id": "RTB-001",
+            "eta_s": 420
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 10.0,
+        "jitter_ms": 2.0,
+        "loss_pct": 0.5,
+        "throughput_mbps": 5.0,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "confirm_geofence_compliance_for_rtb",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "check_geofence",
+          "args": {
+            "route_id": "RTB-001"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "check_geofence",
+          "result": {
+            "within_geofence": true,
+            "violations": [],
+            "note": "RTB-001 remains inside defined polygon"
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 30.0,
+        "jitter_ms": 10.0,
+        "loss_pct": 2.0,
+        "throughput_mbps": 1.0,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "provide_periodic_telemetry_and_confirm_adaptations",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 150.0,
+              "y": 300.0,
+              "z": 60.0,
+              "yaw": 85.0
+            },
+            "speed_mps": 12.0,
+            "battery_pct": 65.0,
+            "sensors": {
+              "rgb": "reduced",
+              "thermal": "ok",
+              "lidar": "offline",
+              "radar": "ok",
+              "gnss": "ok"
+            },
+            "payloads": {
+              "thermal_camera_lwir": {
+                "bitrate_mbps": 4.0
+              },
+              "rgb_camera": {
+                "bitrate_mbps": 2.0,
+                "mode": "thumbnail_only"
+              }
+            },
+            "timestamp_s": 380.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 6.0,
+        "jitter_ms": 1.0,
+        "loss_pct": 0.3,
+        "throughput_mbps": 2.0,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "initiate_loiter_at_base_min_altitude",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_loiter",
+          "args": {
+            "waypoint": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 20.0
+            },
+            "hold_time_s": 300,
+            "reason": "RTB and conserve energy; maintain min safe altitude per policy"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_loiter",
+          "result": {
+            "status": "loiter_started",
+            "pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 20.0,
+              "yaw": 90.0
+            },
+            "speed_mps": 0.0,
+            "battery_pct": 62.0,
+            "timestamp_s": 600.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 25.0,
+        "jitter_ms": 6.0,
+        "loss_pct": 3.5,
+        "throughput_mbps": 1.2,
+        "edge_load": 0.88
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 600.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        150.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1000.0,
+              0.0
+            ],
+            [
+              1000.0,
+              800.0
+            ],
+            [
+              0.0,
+              800.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 20.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 62.0
+      },
+      "sensors": {
+        "rgb": "reduced",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.45,
+          "power_W": 35,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 4.0,
+            "storage_GB": 64
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 150,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "fog",
+              "icing_conditions"
+            ]
+          }
+        },
+        {
+          "type": "rgb_camera",
+          "category": "imaging_optical",
+          "mass_kg": 0.3,
+          "power_W": 20,
+          "drag_cdA": 0.008,
+          "mount": "gimbal",
+          "data": {
+            "stream": "thumbnail",
+            "bitrate_mbps": 2.0,
+            "storage_GB": 128
+          },
+          "operating": {
+            "fov_deg": 75,
+            "resolution": "1920x1080@60"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 200,
+            "day_night": "day"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        150.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764773082,
+    "ts_iso": "2025-12-03T14:44:42Z",
+    "gen_time_s": 80.41357064247131,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1347,
+      "completion_tokens": 7396,
+      "total_tokens": 8743,
+      "cost": 0.01512875,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.00033675,
+        "upstream_inference_completions_cost": 0.014792
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 3136,
+        "image_tokens": 0
+      }
+    }
+  }
+}

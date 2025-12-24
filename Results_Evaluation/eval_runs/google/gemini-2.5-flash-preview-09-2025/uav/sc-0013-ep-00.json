@@ -1,0 +1,633 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.7,
+      "wind_dir_deg": 240.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              2500,
+              0
+            ],
+            [
+              2500,
+              3000
+            ],
+            [
+              0,
+              3000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 150.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 35.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "rad游戏副本": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "pipeline_inspector",
+          "type": "pipeline_inspection_camera",
+          "category": "infra_oil_gas",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.02,
+          "mount": "belly",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 10.5,
+            "storage_GB": 512
+          },
+          "operating": {
+            "fov_deg": 75,
+            "range_m": 1200,
+            "resolution": "1920x1080@60",
+            "wavelength": "Visible"
+          },
+          "constraints": {
+            "min_alt_m": 100,
+            "max_alt_m": 500,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "crosswind_strong"
+            ]
+          }
+        },
+        {
+          "id": "thermal_monitor",
+          "type": "radiometric_thermal_camera",
+          "category": "imaging_thermal",
+          "mass_kg": 0.9,
+          "power_W": 38,
+          "drag_cdA": 0.015,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 8.0,
+            "storage_GB": 256
+          },
+          "operating": {
+            "fov_deg": 60,
+            "range_m": 800,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 80,
+            "max_alt_m": 400,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Initiate mission and check initial status.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "battery_pct",
+              "weather"
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "set_route",
+          "args": {
+            "waypoints": [
+              {
+                "x": 500,
+                "y": 500,
+                "z": 180
+              },
+              {
+                "x": 1500,
+                "y": 1500,
+                "z": 180
+              }
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 150.0
+            },
+            "battery_pct": 100.0,
+            "weather": "icing"
+          }
+        },
+        {
+          "tool": "set_route",
+          "result": {
+            "value": "Route set. Proceeding to waypoint 1."
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 15,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 150,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Acknowledge and request high-resolution thermal stream.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_payload_mode",
+          "args": {
+            "payload_id": "thermal_monitor",
+            "mode": "stream_high_res"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_payload_mode",
+          "result": {
+            "value": "Thermal monitor set to high-resolution streaming mode (8.0 Mbps)."
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 18,
+        "jitter_ms": 3,
+        "loss_pct": 0.2,
+        "throughput_mbps": 145,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Confirm streaming and check for icing risk.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_sensor_data",
+          "args": {
+            "sensor": "barometer",
+            "data_type": "temperature"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "start_data_stream",
+          "args": {
+            "payload_id": "thermal_monitor",
+            "bitrate_mbps": 8.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_sensor_data",
+          "result": {
+            "temperature_c": -2.5
+          }
+        },
+        {
+          "tool": "start_data_stream",
+          "result": {
+            "value": "Thermal stream initiated."
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 20,
+        "jitter_ms": 4,
+        "loss_pct": 0.5,
+        "throughput_mbps": 140,
+        "edge_load": 0.5
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Request swarm coordination for area coverage optimization.",
+      "actions": [
+        {
+          "type": "a2a",
+          "task": "optimize_coverage",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "area_id": "A4",
+            "priority": "high"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "task": "optimize_coverage",
+          "from": "uav_swarm_agent",
+          "status": "pending",
+          "payload": {
+            "estimated_time_s": 60
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 25,
+        "jitter_ms": 5,
+        "loss_pct": 1.0,
+        "throughput_mbps": 130,
+        "edge_load": 0.6
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Acknowledge coordination request and report network degradation.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "speed_mps",
+              "pose"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "speed_mps": 35.0,
+            "pose": {
+              "x": 300.0,
+              "y": 300.0,
+              "z": 180.0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 150,
+        "jitter_ms": 50,
+        "loss_pct": 5.0,
+        "throughput_mbps": 25,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Instruct agent to switch to low-latency control slice and reduce video bitrate.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "request_network_slice",
+          "args": {
+            "slice": "URLLC"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "set_payload_mode",
+          "args": {
+            "payload_id": "thermal_monitor",
+            "mode": "stream_low_res"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "request_network_slice",
+          "result": {
+            "value": "Network slice transition initiated to URLLC."
+          }
+        },
+        {
+          "tool": "set_payload_mode",
+          "result": {
+            "value": "Thermal monitor set to low-resolution streaming mode (2.0 Mbps)."
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 1,
+        "loss_pct": 0.01,
+        "throughput_mbps": 5,
+        "edge_load": 0.95
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Confirm slice change and report successful A2A coordination.",
+      "actions": [
+        {
+          "type": "a2a",
+          "task": "optimize_coverage",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "status_request": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "task": "optimize_coverage",
+          "from": "uav_swarm_agent",
+          "status": "complete",
+          "payload": {
+            "new_route_segment": [
+              1600,
+              1600,
+              180
+            ]
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.0,
+        "throughput_mbps": 4,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Approve new route segment and request mission termination.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_route",
+          "args": {
+            "waypoints": [
+              {
+                "x": 1600,
+                "y": 1600,
+                "z": 180
+              },
+              {
+                "x": 100,
+                "y": 100,
+                "z": 150
+              }
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "terminate_mission",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_route",
+          "result": {
+            "value": "Route updated. Returning to base."
+          }
+        },
+        {
+          "tool": "terminate_mission",
+          "result": {
+            "value": "Mission termination sequence initiated."
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4,
+        "jitter_ms": 0.6,
+        "loss_pct": 0.0,
+        "throughput_mbps": 4,
+        "edge_load": 0.7
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 300.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.0,
+      "wind_dir_deg": 245.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              2500,
+              0
+            ],
+            [
+              2500,
+              3000
+            ],
+            [
+              0,
+              3000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 1600.0,
+        "y": 1600.0,
+        "z": 180.0,
+        "yaw": 270.0
+      },
+      "speed_mps": 30.0,
+      "energy": {
+        "battery_pct": 85.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "rad游戏副本": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "pipeline_inspector",
+          "type": "pipeline_inspection_camera",
+          "category": "infra_oil_gas",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.02,
+          "mount": "belly",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 10.5,
+            "storage_GB": 512
+          },
+          "operating": {
+            "fov_deg": 75,
+            "range_m": 1200,
+            "resolution": "1920x1080@60",
+            "wavelength": "Visible"
+          },
+          "constraints": {
+            "min_alt_m": 100,
+            "max_alt_m": 500,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "crosswind_strong"
+            ]
+          }
+        },
+        {
+          "id": "thermal_monitor",
+          "type": "radiometric_thermal_camera",
+          "category": "imaging_thermal",
+          "mass_kg": 0.9,
+          "power_W": 38,
+          "drag_cdA": 0.015,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 2.0,
+            "storage_GB": 256
+          },
+          "operating": {
+            "fov_deg": 60,
+            "range_m": 800,
+            "resolution": "320x256@15",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 80,
+            "max_alt_m": 400,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        100.0,
+        1200.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764586253,
+    "ts_iso": "2025-12-01T10:50:53Z",
+    "gen_time_s": 29.892510890960693,
+    "attempts_used": 2,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1646,
+      "completion_tokens": 3059,
+      "total_tokens": 4705,
+      "cost": 0.0081413,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.0004938,
+        "upstream_inference_completions_cost": 0.0076475
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

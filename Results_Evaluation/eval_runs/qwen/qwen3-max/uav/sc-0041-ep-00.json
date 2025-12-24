@@ -1,0 +1,619 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "rain",
+      "wind_mps": 8.0,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        120.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              800.0,
+              0.0
+            ],
+            [
+              800.0,
+              600.0
+            ],
+            [
+              0.0,
+              600.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 50.0,
+        "y": 50.0,
+        "z": 25.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 18.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "powerline_inspector",
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 1.2,
+          "power_W": 80,
+          "drag_cdA": 0.015,
+          "mount": "gimbal",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 120.0,
+            "storage_GB": 64
+          },
+          "operating": {
+            "fov_deg": 360,
+            "range_m": 150,
+            "resolution": "10cm",
+            "wavelength": "NIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 80,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain"
+            ]
+          }
+        },
+        {
+          "id": "thermal_inspector",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.6,
+          "power_W": 25,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 20.0,
+            "storage_GB": 32
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 60,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        120.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Initiate mission and assess initial conditions",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 50.0,
+              "y": 50.0,
+              "z": 25.0,
+              "yaw": 90.0
+            },
+            "battery_pct": 100.0,
+            "speed_mps": 18.0,
+            "sensors_ok": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 2.1,
+        "jitter_ms": 0.3,
+        "loss_pct": 0.01,
+        "throughput_mbps": 150.0,
+        "edge_load": 0.2
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Confirm weather suitability and request ascent",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "check_weather_compatibility",
+          "args": {
+            "payload_id": "powerline_inspector"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "check_weather_compatibility",
+          "result": {
+            "compatible": true,
+            "reason": "light_rain acceptable"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 2.3,
+        "jitter_ms": 0.4,
+        "loss_pct": 0.02,
+        "throughput_mbps": 145.0,
+        "edge_load": 0.25
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Ascend to operational altitude and activate lidar",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "adjust_altitude",
+          "args": {
+            "target_alt_m": 50.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "powerline_inspector"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "adjust_altitude",
+          "result": {
+            "success": true,
+            "new_alt": 50.0
+          }
+        },
+        {
+          "tool": "activate_payload",
+          "result": {
+            "status": "active",
+            "payload_id": "powerline_inspector"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 8.5,
+        "jitter_ms": 1.2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 300.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Request thermal imaging of substation area",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to_waypoint",
+          "args": {
+            "x": 400.0,
+            "y": 300.0,
+            "z": 50.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to_waypoint",
+          "result": {
+            "en_route": true,
+            "eta_s": 22.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 12.0,
+        "jitter_ms": 2.5,
+        "loss_pct": 0.5,
+        "throughput_mbps": 280.0,
+        "edge_load": 0.6
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Detect network degradation and switch to URLLC",
+      "actions": [
+        {
+          "type": "a2a",
+          "task": "network_adaptation_request",
+          "to": "network_controller",
+          "payload": {
+            "preferred_slice": "URLLC",
+            "reason": "eMBB degradation"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "task": "network_adaptation_request",
+          "from": "network_controller",
+          "status": "ok",
+          "payload": {
+            "slice_granted": "URLLC",
+            "effective_immediately": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3.0,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.05,
+        "throughput_mbps": 80.0,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Acknowledge slice switch and request thermal scan",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "thermal_inspector"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "activate_payload",
+          "result": {
+            "status": "active",
+            "payload_id": "thermal_inspector"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 2.8,
+        "jitter_ms": 0.4,
+        "loss_pct": 0.03,
+        "throughput_mbps": 75.0,
+        "edge_load": 0.65
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Report partial payload data loss and reduce streaming",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "adjust_payload_bitrate",
+          "args": {
+            "payload_id": "powerline_inspector",
+            "bitrate_mbps": 60.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "adjust_payload_bitrate",
+          "result": {
+            "success": true,
+            "new_bitrate_mbps": 60.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5.2,
+        "jitter_ms": 1.8,
+        "loss_pct": 1.2,
+        "throughput_mbps": 50.0,
+        "edge_load": 0.85
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Approve bitrate reduction and request return to base",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_return_to_launch",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_return_to_launch",
+          "result": {
+            "status": "engaged",
+            "home": {
+              "x": 50.0,
+              "y": 50.0,
+              "z": 25.0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 15.0,
+        "jitter_ms": 3.0,
+        "loss_pct": 2.5,
+        "throughput_mbps": 5.0,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Execute RTL and monitor battery",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 320.0,
+              "y": 240.0,
+              "z": 45.0,
+              "yaw": 225.0
+            },
+            "battery_pct": 68.0,
+            "speed_mps": 16.0,
+            "sensors_ok": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 18.0,
+        "jitter_ms": 4.2,
+        "loss_pct": 3.0,
+        "throughput_mbps": 3.0,
+        "edge_load": 0.95
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "Confirm safe return and battery status",
+      "actions": [],
+      "obs": [],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4.0,
+        "jitter_ms": 0.9,
+        "loss_pct": 0.1,
+        "throughput_mbps": 60.0,
+        "edge_load": 0.5
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 185.0,
+    "env": {
+      "weather": "rain",
+      "wind_mps": 8.0,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        120.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              800.0,
+              0.0
+            ],
+            [
+              800.0,
+              600.0
+            ],
+            [
+              0.0,
+              600.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 55.0,
+        "y": 52.0,
+        "z": 25.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 62.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "powerline_inspector",
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 1.2,
+          "power_W": 80,
+          "drag_cdA": 0.015,
+          "mount": "gimbal",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 60.0,
+            "storage_GB": 64
+          },
+          "operating": {
+            "fov_deg": 360,
+            "range_m": 150,
+            "resolution": "10cm",
+            "wavelength": "NIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 80,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain"
+            ]
+          }
+        },
+        {
+          "id": "thermal_inspector",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.6,
+          "power_W": 25,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 20.0,
+            "storage_GB": 32
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 60,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        120.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764621253,
+    "ts_iso": "2025-12-01T20:34:13Z",
+    "gen_time_s": 73.23427367210388,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1443,
+      "completion_tokens": 3617,
+      "total_tokens": 5060,
+      "cost": 0.0234336,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.0017316,
+        "upstream_inference_completions_cost": 0.021702
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

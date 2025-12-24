@@ -1,0 +1,824 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "dust",
+      "wind_mps": 6.0,
+      "wind_dir_deg": 240.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        10.0,
+        120.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              400.0,
+              0.0
+            ],
+            [
+              400.0,
+              300.0
+            ],
+            [
+              0.0,
+              300.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 410.0,
+        "y": 150.0,
+        "z": 10.0,
+        "yaw": 270.0
+      },
+      "speed_mps": 28.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "bridge_inspector",
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.008,
+          "mount": "belly",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 40,
+            "storage_GB": 64
+          },
+          "operating": {
+            "fov_deg": 270,
+            "range_m": 150,
+            "resolution": "1024x1024@10"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 80,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust",
+              "light_rain"
+            ]
+          }
+        },
+        {
+          "id": "thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.6,
+          "power_W": 18,
+          "drag_cdA": 0.002,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 10,
+            "storage_GB": 32
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 15,
+            "max_alt_m": 100,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        10.0,
+        120.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "detect_geofence_violation_and_request_entry",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "battery_pct",
+              "geofence_status"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 410.0,
+              "y": 150.0,
+              "z": 10.0,
+              "yaw": 270.0
+            },
+            "battery_pct": 100.0,
+            "geofence_status": "outside"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3.2,
+        "jitter_ms": 0.8,
+        "loss_pct": 0.0,
+        "throughput_mbps": 120.0,
+        "edge_load": 0.25
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "authorize_geofence_entry_and_mission_start",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "update_geofence",
+          "args": {
+            "action": "authorize_entry",
+            "uav_id": "uav_01"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "update_geofence",
+          "result": {
+            "status": "authorized",
+            "message": "UAV cleared to enter geofence and proceed to bridge inspection zone"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 8.5,
+        "jitter_ms": 2.1,
+        "loss_pct": 0.1,
+        "throughput_mbps": 450.0,
+        "edge_load": 0.32
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "navigate_into_geofence_and_climb_to_inspection_altitude",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to",
+          "args": {
+            "x": 350.0,
+            "y": 150.0,
+            "z": 50.0,
+            "speed_mps": 18.0
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "airspace_deconfliction",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "intent": "bridge_inspection",
+            "zone": {
+              "x": 350.0,
+              "y": 150.0,
+              "radius_m": 100.0
+            }
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to",
+          "result": {
+            "status": "in_progress",
+            "eta_s": 12.5,
+            "current_pose": {
+              "x": 395.0,
+              "y": 150.0,
+              "z": 28.0,
+              "yaw": 270.0
+            }
+          }
+        },
+        {
+          "task": "airspace_deconfliction",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "conflicts": 0,
+            "clearance": "granted",
+            "valid_until_s": 300.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4.1,
+        "jitter_ms": 1.2,
+        "loss_pct": 0.0,
+        "throughput_mbps": 115.0,
+        "edge_load": 0.28
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "confirm_position_and_request_lidar_activation",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "battery_pct"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 350.0,
+              "y": 150.0,
+              "z": 50.0,
+              "yaw": 270.0
+            },
+            "battery_pct": 96.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 12.3,
+        "jitter_ms": 4.5,
+        "loss_pct": 0.8,
+        "throughput_mbps": 380.0,
+        "edge_load": 0.58
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "activate_lidar_payload_and_begin_bridge_scan",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "bridge_inspector",
+            "mode": "continuous_scan"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "set_hover",
+          "args": {
+            "duration_s": 45.0,
+            "stabilization": "high"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "activate_payload",
+          "result": {
+            "payload_id": "bridge_inspector",
+            "status": "active",
+            "power_draw_W": 45.0,
+            "data_rate_mbps": 40.0
+          }
+        },
+        {
+          "tool": "set_hover",
+          "result": {
+            "status": "hovering",
+            "position_hold_accuracy_m": 0.3,
+            "altitude_hold_accuracy_m": 0.15
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 18.7,
+        "jitter_ms": 6.8,
+        "loss_pct": 1.5,
+        "throughput_mbps": 280.0,
+        "edge_load": 0.72
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "notice_network_degradation_and_request_adaptation",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "check_network_status",
+          "args": {
+            "metrics": [
+              "latency",
+              "throughput",
+              "packet_loss"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "check_network_status",
+          "result": {
+            "latency_ms": 18.7,
+            "throughput_mbps": 280.0,
+            "packet_loss_pct": 1.5,
+            "recommendation": "switch_to_URLLC_or_reduce_data_rate"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 22.4,
+        "jitter_ms": 8.2,
+        "loss_pct": 2.1,
+        "throughput_mbps": 210.0,
+        "edge_load": 0.81
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "adapt_to_network_degradation_by_switching_slice_and_reducing_data_rate",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "switch_network_slice",
+          "args": {
+            "target_slice": "URLLC",
+            "priority": "high"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "configure_payload",
+          "args": {
+            "payload_id": "bridge_inspector",
+            "data_rate_mbps": 20.0,
+            "compression": "enabled"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "switch_network_slice",
+          "result": {
+            "slice": "URLLC",
+            "latency_ms": 4.5,
+            "status": "switched"
+          }
+        },
+        {
+          "tool": "configure_payload",
+          "result": {
+            "payload_id": "bridge_inspector",
+            "data_rate_mbps": 20.0,
+            "compression": "enabled",
+            "quality": "high"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4.5,
+        "jitter_ms": 1.1,
+        "loss_pct": 0.1,
+        "throughput_mbps": 95.0,
+        "edge_load": 0.45
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "request_thermal_imaging_for_structural_anomaly_detection",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "thermal_imager",
+            "mode": "survey"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "activate_payload",
+          "result": {
+            "payload_id": "thermal_imager",
+            "status": "active",
+            "power_draw_W": 18.0,
+            "data_rate_mbps": 10.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5.2,
+        "jitter_ms": 1.4,
+        "loss_pct": 0.0,
+        "throughput_mbps": 92.0,
+        "edge_load": 0.51
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "complete_scan_and_prepare_for_return_to_base",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "deactivate_payload",
+          "args": {
+            "payload_id": "bridge_inspector"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "deactivate_payload",
+          "args": {
+            "payload_id": "thermal_imager"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "mission_summary",
+          "to": "ground_control_agent",
+          "payload": {
+            "mission_type": "bridge_inspection",
+            "data_collected_GB": 12.8,
+            "anomalies_detected": 3,
+            "duration_s": 180.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "deactivate_payload",
+          "result": {
+            "payload_id": "bridge_inspector",
+            "status": "inactive"
+          }
+        },
+        {
+          "tool": "deactivate_payload",
+          "result": {
+            "payload_id": "thermal_imager",
+            "status": "inactive"
+          }
+        },
+        {
+          "task": "mission_summary",
+          "from": "ground_control_agent",
+          "status": "acknowledged",
+          "payload": {
+            "data_received": true,
+            "rtb_clearance": "granted"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3.8,
+        "jitter_ms": 0.9,
+        "loss_pct": 0.0,
+        "throughput_mbps": 110.0,
+        "edge_load": 0.38
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "authorize_return_to_base_and_monitor_battery",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "battery_pct",
+              "pose"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "battery_pct": 78.0,
+            "pose": {
+              "x": 350.0,
+              "y": 150.0,
+              "z": 50.0,
+              "yaw": 270.0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 45.0,
+        "jitter_ms": 12.0,
+        "loss_pct": 0.5,
+        "throughput_mbps": 15.0,
+        "edge_load": 0.22
+      }
+    },
+    {
+      "turn": 11,
+      "speaker": "agent",
+      "intent": "navigate_to_landing_zone_within_geofence",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to",
+          "args": {
+            "x": 200.0,
+            "y": 150.0,
+            "z": 15.0,
+            "speed_mps": 15.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to",
+          "result": {
+            "status": "in_progress",
+            "eta_s": 18.0,
+            "current_pose": {
+              "x": 310.0,
+              "y": 150.0,
+              "z": 35.0,
+              "yaw": 270.0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4.0,
+        "jitter_ms": 1.0,
+        "loss_pct": 0.0,
+        "throughput_mbps": 105.0,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 12,
+      "speaker": "user",
+      "intent": "confirm_landing_and_mission_completion",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "battery_pct",
+              "geofence_status"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 200.0,
+              "y": 150.0,
+              "z": 15.0,
+              "yaw": 270.0
+            },
+            "battery_pct": 72.0,
+            "geofence_status": "inside"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3.5,
+        "jitter_ms": 0.7,
+        "loss_pct": 0.0,
+        "throughput_mbps": 118.0,
+        "edge_load": 0.26
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 210.0,
+    "env": {
+      "weather": "dust",
+      "wind_mps": 6.0,
+      "wind_dir_deg": 240.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        10.0,
+        120.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              400.0,
+              0.0
+            ],
+            [
+              400.0,
+              300.0
+            ],
+            [
+              0.0,
+              300.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 200.0,
+        "y": 150.0,
+        "z": 15.0,
+        "yaw": 270.0
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 72.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "bridge_inspector",
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 1.2,
+          "power_W": 0,
+          "drag_cdA": 0.008,
+          "mount": "belly",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 0,
+            "storage_GB": 64
+          },
+          "operating": {
+            "fov_deg": 270,
+            "range_m": 150,
+            "resolution": "1024x1024@10"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 80,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust",
+              "light_rain"
+            ]
+          }
+        },
+        {
+          "id": "thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.6,
+          "power_W": 0,
+          "drag_cdA": 0.002,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 0,
+            "storage_GB": 32
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 15,
+            "max_alt_m": 100,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        10.0,
+        120.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1765487595,
+    "ts_iso": "2025-12-11T21:13:15Z",
+    "gen_time_s": 60.5554723739624,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1633,
+      "completion_tokens": 5996,
+      "total_tokens": 7629,
+      "cost": 0.094839,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.004899,
+        "upstream_inference_completions_cost": 0.08994
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

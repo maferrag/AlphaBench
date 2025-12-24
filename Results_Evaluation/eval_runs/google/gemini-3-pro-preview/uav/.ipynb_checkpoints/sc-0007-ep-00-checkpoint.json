@@ -1,0 +1,558 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "hail,temperature_extremes_cold,crosswind_strong",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 240.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        50.0,
+        1200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              1000,
+              0
+            ],
+            [
+              1000,
+              1000
+            ],
+            [
+              0,
+              1000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 150.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 35.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "fire_thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 1.8,
+          "power_W": 45,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 4.0,
+            "storage_GB": 128
+          },
+          "operating": {
+            "fov_deg": 55,
+            "range_m": 3000,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 100,
+            "max_alt_m": 1500,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "hail",
+              "light_rain",
+              "fog"
+            ]
+          }
+        },
+        {
+          "id": "fire_retardant_system",
+          "type": "fire_retardant_delivery_system",
+          "category": "public_safety_fire",
+          "mass_kg": 12.0,
+          "power_W": 20,
+          "drag_cdA": 0.03,
+          "mount": "bay",
+          "operating": {
+            "range_m": 50
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 200,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        50.0,
+        1200.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Report thermal anomaly detection and request instructions.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "scan_thermal",
+          "args": {
+            "sector": "NNE",
+            "zoom": 2.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "scan_thermal",
+          "result": {
+            "anomaly_detected": true,
+            "temp_c": 450,
+            "location": {
+              "x": 450,
+              "y": 300,
+              "z": 0
+            },
+            "confidence": 0.92
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 12,
+        "jitter_ms": 2,
+        "loss_pct": 0.05,
+        "throughput_mbps": 150.0,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Acknowledge anomaly and command UAV to investigate closer.",
+      "actions": [],
+      "obs": [],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 14,
+        "jitter_ms": 3,
+        "loss_pct": 0.1,
+        "throughput_mbps": 145.0,
+        "edge_load": 0.35
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Navigate to anomaly coordinates and initiate high-res video stream.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "fly_to",
+          "args": {
+            "x": 450,
+            "y": 300,
+            "z": 120,
+            "speed": 25
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "stream_video",
+          "args": {
+            "source": "fire_thermal_imager",
+            "quality": "high"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "fly_to",
+          "result": {
+            "value": "en_route"
+          }
+        },
+        {
+          "tool": "stream_video",
+          "result": {
+            "value": "streaming_started"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 25,
+        "jitter_ms": 15,
+        "loss_pct": 1.2,
+        "throughput_mbps": 80.0,
+        "edge_load": 0.6
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Confirm fire visual. Order preparation of fire retardant drop.",
+      "actions": [],
+      "obs": [],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 45,
+        "jitter_ms": 22,
+        "loss_pct": 4.5,
+        "throughput_mbps": 40.0,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Detect network degradation due to hail. Switch to URLLC for safety critical operations and arm payload.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_network_slice",
+          "args": {
+            "slice": "URLLC",
+            "reason": "high_packet_loss_weather"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "arm_payload",
+          "args": {
+            "id": "fire_retardant_system"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_network_slice",
+          "result": {
+            "status": "switched",
+            "current_slice": "URLLC"
+          }
+        },
+        {
+          "tool": "arm_payload",
+          "result": {
+            "value": "armed_ready"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.0,
+        "throughput_mbps": 10.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Authorize payload release.",
+      "actions": [],
+      "obs": [],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 0.6,
+        "loss_pct": 0.0,
+        "throughput_mbps": 10.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Execute drop and coordinate with swarm scout to verify impact.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "trigger_payload",
+          "args": {
+            "id": "fire_retardant_system"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "verify_impact",
+          "to": "scout_uav_02",
+          "payload": {
+            "location": {
+              "x": 450,
+              "y": 300
+            }
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "trigger_payload",
+          "result": {
+            "value": "released"
+          }
+        },
+        {
+          "task": "verify_impact",
+          "from": "scout_uav_02",
+          "status": "ok",
+          "payload": {
+            "visual_confirmation": "fire_suppressed",
+            "timestamp": 120.5
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.0,
+        "throughput_mbps": 10.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Mission accomplished. Return to base.",
+      "actions": [],
+      "obs": [],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 6,
+        "jitter_ms": 0.8,
+        "loss_pct": 0.01,
+        "throughput_mbps": 9.5,
+        "edge_load": 0.45
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Initiate return to launch. Switch to mMTC to conserve resources during transit.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "return_to_launch",
+          "args": {}
+        },
+        {
+          "type": "mcp",
+          "name": "set_network_slice",
+          "args": {
+            "slice": "mMTC",
+            "reason": "transit_power_save"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "return_to_launch",
+          "result": {
+            "value": "returning"
+          }
+        },
+        {
+          "tool": "set_network_slice",
+          "result": {
+            "status": "switched",
+            "current_slice": "mMTC"
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 80,
+        "jitter_ms": 10,
+        "loss_pct": 0.0,
+        "throughput_mbps": 1.0,
+        "edge_load": 0.2
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 240.0,
+    "env": {
+      "weather": "hail,temperature_extremes_cold,crosswind_strong",
+      "wind_mps": 9.0,
+      "wind_dir_deg": 245.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        50.0,
+        1200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              1000,
+              0
+            ],
+            [
+              1000,
+              1000
+            ],
+            [
+              0,
+              1000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 450.0,
+        "y": 300.0,
+        "z": 120.0,
+        "yaw": 270.0
+      },
+      "speed_mps": 25.0,
+      "energy": {
+        "battery_pct": 88.5
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "fire_thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 1.8,
+          "power_W": 45,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "data": {
+            "stream": "telemetry_only",
+            "bitrate_mbps": 0.1,
+            "storage_GB": 127.5
+          },
+          "operating": {
+            "fov_deg": 55,
+            "range_m": 3000,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 100,
+            "max_alt_m": 1500,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "hail",
+              "light_rain",
+              "fog"
+            ]
+          }
+        },
+        {
+          "id": "fire_retardant_system",
+          "type": "fire_retardant_delivery_system",
+          "category": "public_safety_fire",
+          "mass_kg": 2.0,
+          "power_W": 5,
+          "drag_cdA": 0.03,
+          "mount": "bay",
+          "operating": {
+            "range_m": 0
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 200,
+            "day_night": "both"
+          },
+          "status": "empty"
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        50.0,
+        1200.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764578948,
+    "ts_iso": "2025-12-01T08:49:08Z",
+    "gen_time_s": 58.23065543174744,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1543,
+      "completion_tokens": 5378,
+      "total_tokens": 6921,
+      "cost": 0.067622,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.003086,
+        "upstream_inference_completions_cost": 0.064536
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1377,
+        "image_tokens": 0
+      }
+    }
+  }
+}

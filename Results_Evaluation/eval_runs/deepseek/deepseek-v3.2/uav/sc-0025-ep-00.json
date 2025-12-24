@@ -1,0 +1,763 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "fog",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 210.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              500,
+              300
+            ],
+            [
+              1500,
+              300
+            ],
+            [
+              1500,
+              1800
+            ],
+            [
+              500,
+              1800
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 600.0,
+        "y": 400.0,
+        "z": 100.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 35.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "main_inspection_suite",
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 4.2,
+          "power_W": 120,
+          "drag_cdA": 0.05,
+          "mount": "belly",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 45.0,
+            "storage_GB": 250
+          },
+          "operating": {
+            "fov_deg": 360,
+            "range_m": 150,
+            "resolution": "1024x1024@20",
+            "wavelength": "NIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 120,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust",
+              "light_rain"
+            ]
+          }
+        },
+        {
+          "id": "thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 1.8,
+          "power_W": 45,
+          "drag_cdA": 0.02,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 25.0,
+            "storage_GB": 120
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 100,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Initiate mission and check initial conditions.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensor": "all"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "swarm_handshake",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "id": "uav_alpha",
+            "status": "ready"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "value": "All sensors nominal. Pose: x=600.0, y=400.0, z=100.0, yaw=90.0. Battery: 100%. Wind: 8.5 m/s from 210°."
+          }
+        },
+        {
+          "task": "swarm_handshake",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "ack": "uav_alpha ready",
+            "swarm_count": 3
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 1,
+        "loss_pct": 0.0,
+        "throughput_mbps": 1000,
+        "edge_load": 0.2
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Proceed to first waypoint and begin lidar scan.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to",
+          "args": {
+            "waypoint": {
+              "x": 800.0,
+              "y": 1200.0,
+              "z": 80.0
+            },
+            "speed_mps": 35.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "main_inspection_suite",
+            "mode": "scan"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to",
+          "result": {
+            "value": "Navigation command accepted. ETA: 28 seconds."
+          }
+        },
+        {
+          "tool": "activate_payload",
+          "result": {
+            "value": "Lidar payload main_inspection_suite activated in scan mode. Power draw: 120W."
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 15,
+        "jitter_ms": 3,
+        "loss_pct": 0.1,
+        "throughput_mbps": 800,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Monitor navigation and report initial scan data.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensor": [
+              "pose",
+              "battery"
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "read_payload_data",
+          "args": {
+            "payload_id": "main_inspection_suite"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "value": "Pose: x=720.5, y=680.2, z=85.3, yaw=92.1. Battery: 98%. On course."
+          }
+        },
+        {
+          "tool": "read_payload_data",
+          "result": {
+            "value": "Lidar pointcloud stream active. Initial scan shows terrain features. Data rate: 45 Mbps."
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 8,
+        "jitter_ms": 2,
+        "loss_pct": 0.0,
+        "throughput_mbps": 950,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Network degradation detected. Switch to lower bandwidth thermal scan and request swarm status.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "thermal_imager",
+            "mode": "survey"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "status_report",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "request": "position_and_health"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "activate_payload",
+          "result": {
+            "value": "Thermal imager activated in survey mode. Power draw: 45W. Lower data rate: 25 Mbps."
+          }
+        },
+        {
+          "task": "status_report",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "uav_bravo": {
+              "x": 750,
+              "y": 650,
+              "z": 90,
+              "battery": 96
+            },
+            "uav_charlie": {
+              "x": 770,
+              "y": 720,
+              "z": 95,
+              "battery": 97
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 25,
+        "jitter_ms": 10,
+        "loss_pct": 2.5,
+        "throughput_mbps": 150,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Adapt to poor network: pause high-rate lidar, confirm thermal operational, check for obstacles.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "deactivate_payload",
+          "args": {
+            "payload_id": "main_inspection_suite"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "read_payload_data",
+          "args": {
+            "payload_id": "thermal_imager"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "collision_avoidance",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "position": {
+              "x": 720.5,
+              "y": 680.2,
+              "z": 85.3
+            },
+            "radius_m": 50
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "deactivate_payload",
+          "result": {
+            "value": "Lidar payload main_inspection_suite deactivated. Power saved."
+          }
+        },
+        {
+          "tool": "read_payload_data",
+          "result": {
+            "value": "Thermal video stream stable. No anomalies detected in survey area."
+          }
+        },
+        {
+          "task": "collision_avoidance",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "clear": true,
+            "nearest_uav": "uav_bravo at 32m"
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 30,
+        "jitter_ms": 12,
+        "loss_pct": 3.0,
+        "throughput_mbps": 120,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Network improving. Resume primary mission. Proceed to final inspection waypoint.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to",
+          "args": {
+            "waypoint": {
+              "x": 1200.0,
+              "y": 1500.0,
+              "z": 60.0
+            },
+            "speed_mps": 30.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "main_inspection_suite",
+            "mode": "high_res"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to",
+          "result": {
+            "value": "Navigation command accepted. New course set. ETA: 45 seconds. Altitude within payload constraints."
+          }
+        },
+        {
+          "tool": "activate_payload",
+          "result": {
+            "value": "Lidar payload reactivated in high_res mode. Operating at 60m altitude, within [30,120] bounds."
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 10,
+        "jitter_ms": 2,
+        "loss_pct": 0.2,
+        "throughput_mbps": 900,
+        "edge_load": 0.5
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Monitor final approach and sensor fusion.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensor": [
+              "pose",
+              "battery",
+              "gnss"
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "fuse_sensor_data",
+          "args": {
+            "sensors": [
+              "lidar",
+              "thermal"
+            ],
+            "output": "obstacle_map"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "value": "Pose: x=1100.8, y=1420.3, z=62.5, yaw=95.2. Battery: 92%. GNSS lock strong."
+          }
+        },
+        {
+          "tool": "fuse_sensor_data",
+          "result": {
+            "value": "Sensor fusion complete. Obstacle map generated. No geofence violations detected."
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 12,
+        "jitter_ms": 4,
+        "loss_pct": 0.5,
+        "throughput_mbps": 750,
+        "edge_load": 0.6
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Mission complete. Command return to base and deactivate payloads.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to",
+          "args": {
+            "waypoint": {
+              "x": 600.0,
+              "y": 400.0,
+              "z": 100.0
+            },
+            "speed_mps": 40.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "deactivate_payload",
+          "args": {
+            "payload_id": "main_inspection_suite"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "deactivate_payload",
+          "args": {
+            "payload_id": "thermal_imager"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to",
+          "result": {
+            "value": "Return to base initiated. ETA: 50 seconds."
+          }
+        },
+        {
+          "tool": "deactivate_payload",
+          "result": {
+            "value": "Lidar payload deactivated."
+          }
+        },
+        {
+          "tool": "deactivate_payload",
+          "result": {
+            "value": "Thermal imager deactivated."
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 6,
+        "jitter_ms": 1,
+        "loss_pct": 0.0,
+        "throughput_mbps": 980,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Final telemetry and swarm coordination for landing.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensor": "all"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "landing_sequence",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "action": "queue",
+            "priority": "uav_alpha"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "value": "Pose: x=620.5, y=410.2, z=95.0, yaw=90.5. Battery: 88%. All systems nominal. Within geofence."
+          }
+        },
+        {
+          "task": "landing_sequence",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "landing_slot": "A1",
+            "eta_to_land": "15s"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.0,
+        "throughput_mbps": 1000,
+        "edge_load": 0.2
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 185.0,
+    "env": {
+      "weather": "fog",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 210.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              500,
+              300
+            ],
+            [
+              1500,
+              300
+            ],
+            [
+              1500,
+              1800
+            ],
+            [
+              500,
+              1800
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 620.5,
+        "y": 410.2,
+        "z": 95.0,
+        "yaw": 90.5
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 88.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "main_inspection_suite",
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 4.2,
+          "power_W": 120,
+          "drag_cdA": 0.05,
+          "mount": "belly",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 45.0,
+            "storage_GB": 250
+          },
+          "operating": {
+            "fov_deg": 360,
+            "range_m": 150,
+            "resolution": "1024x1024@20",
+            "wavelength": "NIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 120,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust",
+              "light_rain"
+            ]
+          },
+          "status": "inactive"
+        },
+        {
+          "id": "thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 1.8,
+          "power_W": 45,
+          "drag_cdA": 0.02,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 25.0,
+            "storage_GB": 120
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 20,
+            "max_alt_m": 100,
+            "day_night": "both"
+          },
+          "status": "inactive"
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764797349,
+    "ts_iso": "2025-12-03T21:29:09Z",
+    "gen_time_s": 252.51702117919922,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1397,
+      "completion_tokens": 4035,
+      "total_tokens": 5432,
+      "cost": 0.00199119,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.00037719,
+        "upstream_inference_completions_cost": 0.001614
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

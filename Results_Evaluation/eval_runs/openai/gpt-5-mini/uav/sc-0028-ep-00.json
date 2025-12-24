@@ -1,0 +1,835 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        10.0,
+        150.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              2000.0,
+              0.0
+            ],
+            [
+              2000.0,
+              1500.0
+            ],
+            [
+              0.0,
+              1500.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 20.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 18.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 0.8,
+          "power_W": 45.0,
+          "drag_cdA": 0.015,
+          "mount": "gimbal",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 8.0,
+            "storage_GB": 64.0
+          },
+          "operating": {
+            "fov_deg": 360.0,
+            "range_m": 150.0,
+            "resolution": "10cm"
+          },
+          "constraints": {
+            "min_alt_m": 20.0,
+            "max_alt_m": 120.0,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "fog"
+            ]
+          }
+        },
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.3,
+          "power_W": 20.0,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 4.0,
+            "storage_GB": 32.0
+          },
+          "operating": {
+            "fov_deg": 58.0,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 15.0,
+            "max_alt_m": 100.0,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        10.0,
+        150.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Initiate mission: ascend to survey altitude, enable lidar streaming, and notify swarm for collision-avoidance coordination.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_altitude",
+          "args": {
+            "target_z": 60.0,
+            "rate_mps": 3.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "start_payload",
+          "args": {
+            "payload": "lidar",
+            "mode": "stream",
+            "bitrate_mbps": 8.0
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "collision_avoidance",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "intent": "coordinate_paths",
+            "timestamp_s": 5.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_altitude",
+          "result": {
+            "status": "accepted",
+            "new_pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 60.0,
+              "yaw": 90.0
+            },
+            "time_s": 12.0
+          }
+        },
+        {
+          "tool": "start_payload",
+          "result": {
+            "status": "streaming",
+            "payload": "lidar",
+            "bitrate_mbps": 8.0
+          }
+        },
+        {
+          "task": "collision_avoidance",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "formation": "staggered",
+            "min_separation_m": 20.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 8,
+        "jitter_ms": 1,
+        "loss_pct": 0.1,
+        "throughput_mbps": 150.0,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Confirm telemetry; warn about icing and request control-plane prioritization (use URLLC).",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {}
+        },
+        {
+          "type": "a2a",
+          "task": "notify_icing",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "severity": "moderate",
+            "advice": "reduce exposure at high altitude"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 60.0,
+              "yaw": 90.0
+            },
+            "speed_mps": 3.0,
+            "battery_pct": 99.5,
+            "time_s": 13.0
+          }
+        },
+        {
+          "task": "notify_icing",
+          "from": "uav_swarm_agent",
+          "status": "ack",
+          "payload": {
+            "adjust_plan": "prepare_altitude_reduction",
+            "timestamp_s": 13.1
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 2,
+        "loss_pct": 0.2,
+        "throughput_mbps": 50.0,
+        "edge_load": 0.5
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Reduce altitude to limit icing exposure and trim non-critical streams if needed.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_altitude",
+          "args": {
+            "target_z": 55.0,
+            "rate_mps": 2.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_altitude",
+          "result": {
+            "status": "accepted",
+            "new_pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 55.0,
+              "yaw": 90.0
+            },
+            "time_s": 25.0
+          }
+        },
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 55.0,
+              "yaw": 90.0
+            },
+            "speed_mps": 2.5,
+            "battery_pct": 99.0,
+            "time_s": 25.1
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 6,
+        "jitter_ms": 2,
+        "loss_pct": 0.3,
+        "throughput_mbps": 40.0,
+        "edge_load": 0.55
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Network shows contention; instruct to pause heavy lidar streaming and prioritize control signaling under degraded backhaul.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "stop_payload",
+          "args": {
+            "payload": "lidar",
+            "graceful": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "stop_payload",
+          "result": {
+            "status": "stopping",
+            "payload": "lidar",
+            "stopped_bitrate_mbps": 8.0,
+            "time_s": 26.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 40,
+        "jitter_ms": 20,
+        "loss_pct": 5.0,
+        "throughput_mbps": 2.0,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Adapt to degraded link: request swarm data ferry for buffered lidar data, reduce lidar bitrate for intermittent streaming.",
+      "actions": [
+        {
+          "type": "a2a",
+          "task": "data_ferry_request",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "data_type": "lidar_pointcloud_buffer",
+            "size_MB": 120.0,
+            "priority": "low"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "adjust_payload_bitrate",
+          "args": {
+            "payload": "lidar",
+            "target_bitrate_mbps": 1.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "task": "data_ferry_request",
+          "from": "uav_swarm_agent",
+          "status": "accepted",
+          "payload": {
+            "assigned_agent": "uav_02",
+            "eta_s": 180.0
+          }
+        },
+        {
+          "tool": "adjust_payload_bitrate",
+          "result": {
+            "status": "applied",
+            "payload": "lidar",
+            "bitrate_mbps": 1.0,
+            "time_s": 30.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 50,
+        "jitter_ms": 25,
+        "loss_pct": 4.5,
+        "throughput_mbps": 1.5,
+        "edge_load": 0.95
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Update waypoint to avoid icing region and request GNSS verification before execute.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_gnss",
+          "args": {}
+        },
+        {
+          "type": "mcp",
+          "name": "upload_mission_update",
+          "args": {
+            "waypoint": {
+              "x": 300.0,
+              "y": 400.0,
+              "z": 50.0
+            },
+            "priority": "safety"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_gnss",
+          "result": {
+            "fix": "3D",
+            "lat_lon": {
+              "x": 100.0,
+              "y": 100.0
+            },
+            "hdop": 0.9,
+            "time_s": 31.0
+          }
+        },
+        {
+          "tool": "upload_mission_update",
+          "result": {
+            "status": "received",
+            "new_waypoint": {
+              "x": 300.0,
+              "y": 400.0,
+              "z": 50.0
+            },
+            "time_s": 31.5
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 12,
+        "jitter_ms": 5,
+        "loss_pct": 0.5,
+        "throughput_mbps": 40.0,
+        "edge_load": 0.6
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Navigate to new waypoint while maintaining safe altitude and reduced sensor load.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to",
+          "args": {
+            "waypoint": {
+              "x": 300.0,
+              "y": 400.0,
+              "z": 50.0
+            },
+            "speed_mps": 12.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to",
+          "result": {
+            "status": "enroute",
+            "target": {
+              "x": 300.0,
+              "y": 400.0,
+              "z": 50.0
+            },
+            "current_pose": {
+              "x": 180.0,
+              "y": 170.0,
+              "z": 50.0,
+              "yaw": 95.0
+            },
+            "time_s": 120.0
+          }
+        },
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 180.0,
+              "y": 170.0,
+              "z": 50.0,
+              "yaw": 95.0
+            },
+            "speed_mps": 11.5,
+            "battery_pct": 88.0,
+            "time_s": 120.2
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 20,
+        "jitter_ms": 6,
+        "loss_pct": 0.8,
+        "throughput_mbps": 60.0,
+        "edge_load": 0.65
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Request continued separation checks from swarm and prioritize control channel; inform to prepare return if icing worsens.",
+      "actions": [
+        {
+          "type": "a2a",
+          "task": "collision_avoidance",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "check_interval_s": 5.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "task": "collision_avoidance",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "next_check_s": 125.0,
+            "min_separation_m": 20.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 1,
+        "loss_pct": 0.1,
+        "throughput_mbps": 30.0,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Loiter at current safe position, reduce telemetry frequency to preserve link, and report status.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_mode",
+          "args": {
+            "mode": "loiter",
+            "hold_point": {
+              "x": 180.0,
+              "y": 170.0,
+              "z": 50.0
+            }
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "freq_hz": 0.2
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_mode",
+          "result": {
+            "status": "loitering",
+            "pose": {
+              "x": 180.0,
+              "y": 170.0,
+              "z": 50.0,
+              "yaw": 95.0
+            },
+            "time_s": 200.0
+          }
+        },
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 180.0,
+              "y": 170.0,
+              "z": 50.0,
+              "yaw": 95.0
+            },
+            "speed_mps": 0.5,
+            "battery_pct": 82.0,
+            "time_s": 200.1
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 10,
+        "jitter_ms": 3,
+        "loss_pct": 0.3,
+        "throughput_mbps": 20.0,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "Authorize mission abort and command return-to-home (RTL) due to persistent icing; instruct to maintain safe separation while returning.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "return_to_home",
+          "args": {
+            "home": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 20.0
+            },
+            "priority": "safety"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "collision_avoidance",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "context": "rtl",
+            "maintain_min_sep_m": 30.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "return_to_home",
+          "result": {
+            "status": "rtl_engaged",
+            "estimated_pose": {
+              "x": 160.0,
+              "y": 150.0,
+              "z": 40.0,
+              "yaw": 80.0
+            },
+            "speed_mps": 10.0,
+            "battery_pct": 76.0,
+            "eta_s": 300.0,
+            "time_s": 210.0
+          }
+        },
+        {
+          "task": "collision_avoidance",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "adjustments": "path_offsets_applied",
+            "min_separation_m": 30.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 15,
+        "jitter_ms": 6,
+        "loss_pct": 0.5,
+        "throughput_mbps": 10.0,
+        "edge_load": 0.85
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 210.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        10.0,
+        150.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              2000.0,
+              0.0
+            ],
+            [
+              2000.0,
+              1500.0
+            ],
+            [
+              0.0,
+              1500.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 160.0,
+        "y": 150.0,
+        "z": 40.0,
+        "yaw": 80.0
+      },
+      "speed_mps": 10.0,
+      "energy": {
+        "battery_pct": 76.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "degraded_stream",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 0.8,
+          "power_W": 45.0,
+          "drag_cdA": 0.015,
+          "mount": "gimbal",
+          "data": {
+            "stream": "buffered/lowrate",
+            "bitrate_mbps": 1.0,
+            "storage_GB": 62.0
+          },
+          "operating": {
+            "fov_deg": 360.0,
+            "range_m": 150.0,
+            "resolution": "10cm"
+          },
+          "constraints": {
+            "min_alt_m": 20.0,
+            "max_alt_m": 120.0,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "fog"
+            ]
+          }
+        },
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.3,
+          "power_W": 20.0,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 4.0,
+            "storage_GB": 32.0
+          },
+          "operating": {
+            "fov_deg": 58.0,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 15.0,
+            "max_alt_m": 100.0,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        10.0,
+        150.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764772090,
+    "ts_iso": "2025-12-03T14:28:10Z",
+    "gen_time_s": 76.94183778762817,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1370,
+      "completion_tokens": 7776,
+      "total_tokens": 9146,
+      "cost": 0.0158945,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.0003425,
+        "upstream_inference_completions_cost": 0.015552
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 2560,
+        "image_tokens": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,885 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "icing",
+      "wind_mps": 9.5,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        500.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1000.0,
+              0.0
+            ],
+            [
+              1000.0,
+              800.0
+            ],
+            [
+              200.0,
+              800.0
+            ],
+            [
+              0.0,
+              600.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 30.0,
+        "yaw": 270.0
+      },
+      "speed_mps": 28.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "main_imager",
+          "type": "gimbaled_camera",
+          "category": "imaging_optical",
+          "mass_kg": 0.8,
+          "power_W": 15.0,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 10.0,
+            "storage_GB": 128
+          },
+          "operating": {
+            "fov_deg": 72.0,
+            "resolution": "1920x1080@60"
+          },
+          "constraints": {
+            "min_alt_m": 50.0,
+            "max_alt_m": 500.0,
+            "day_night": "day"
+          }
+        },
+        {
+          "id": "thermal_sensor",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.6,
+          "power_W": 12.0,
+          "drag_cdA": 0.008,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 8.0,
+            "storage_GB": 64
+          },
+          "operating": {
+            "fov_deg": 45.0,
+            "wavelength": "LWIR",
+            "resolution": "640x512@30"
+          },
+          "constraints": {
+            "min_alt_m": 30.0,
+            "max_alt_m": 400.0,
+            "day_night": "both"
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        500.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "mission_init",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "speed_mps",
+              "energy",
+              "sensors"
+            ]
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "swarm_status_request",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "uav_id": "uav_001",
+            "request": "proximity_check"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 30.0,
+              "yaw": 270.0
+            },
+            "speed_mps": 28.0,
+            "energy": {
+              "battery_pct": 99.8
+            },
+            "sensors": {
+              "rgb": "ok",
+              "thermal": "ok",
+              "lidar": "offline",
+              "radar": "offline",
+              "gnss": "ok",
+              "imu": "ok"
+            }
+          }
+        },
+        {
+          "task": "swarm_status_request",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "proximity": {
+              "nearest_uav": "uav_002",
+              "distance_m": 185.0,
+              "bearing_deg": 45.0
+            },
+            "conflicts": []
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 8,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 25.0,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "mission_assign",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_waypoints",
+          "args": {
+            "waypoints": [
+              {
+                "x": 300.0,
+                "y": 200.0,
+                "z": 100.0,
+                "speed_mps": 15.0
+              },
+              {
+                "x": 500.0,
+                "y": 400.0,
+                "z": 120.0,
+                "speed_mps": 15.0
+              }
+            ],
+            "loiter_radius_m": 10.0,
+            "loiter_speed_mps": 5.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_waypoints",
+          "result": {
+            "status": "accepted",
+            "waypoints_valid": true,
+            "geofence_check": "ok",
+            "altitude_check": "ok",
+            "eta_s": [
+              42.5,
+              98.3
+            ]
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 25,
+        "jitter_ms": 5,
+        "loss_pct": 0.5,
+        "throughput_mbps": 85.0,
+        "edge_load": 0.6
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "mission_ack",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "arm_and_takeoff",
+          "args": {
+            "target_alt_m": 100.0,
+            "vspeed_mps": 5.0
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "collision_avoidance_activate",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "uav_id": "uav_001",
+            "flight_plan": [
+              {
+                "x": 300.0,
+                "y": 200.0,
+                "z": 100.0,
+                "eta_s": 42.5
+              },
+              {
+                "x": 500.0,
+                "y": 400.0,
+                "z": 120.0,
+                "eta_s": 98.3
+              }
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "arm_and_takeoff",
+          "result": {
+            "status": "in_progress",
+            "current_alt_m": 35.2,
+            "vspeed_mps": 4.8,
+            "battery_pct": 98.5
+          }
+        },
+        {
+          "task": "collision_avoidance_activate",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "avoidance_active": true,
+            "conflict_risk": "low",
+            "advisory": "maintain_course"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 10,
+        "jitter_ms": 3,
+        "loss_pct": 0.2,
+        "throughput_mbps": 20.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "sensor_activate",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "main_imager",
+            "mode": "stream",
+            "resolution": "1920x1080@30"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload_id": "thermal_sensor",
+            "mode": "stream",
+            "resolution": "640x512@15"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "activate_payload",
+          "result": {
+            "payload_id": "main_imager",
+            "status": "active",
+            "bitrate_mbps": 8.0,
+            "storage_remaining_GB": 127.8,
+            "power_draw_W": 15.0
+          }
+        },
+        {
+          "tool": "activate_payload",
+          "result": {
+            "payload_id": "thermal_sensor",
+            "status": "active",
+            "bitrate_mbps": 4.0,
+            "storage_remaining_GB": 63.9,
+            "power_draw_W": 12.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 40,
+        "jitter_ms": 10,
+        "loss_pct": 1.2,
+        "throughput_mbps": 70.0,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "adapt_to_network",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "adjust_stream",
+          "args": {
+            "payload_id": "main_imager",
+            "bitrate_mbps": 4.0,
+            "resolution": "1280x720@30",
+            "gop_size": 60
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "request_slice_change",
+          "to": "network_orchestrator",
+          "payload": {
+            "uav_id": "uav_001",
+            "requested_slice": "mMTC",
+            "reason": "high_packet_loss",
+            "current_lat_ms": 40,
+            "current_loss_pct": 1.2
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "adjust_stream",
+          "result": {
+            "payload_id": "main_imager",
+            "status": "adjusted",
+            "new_bitrate_mbps": 4.0,
+            "new_resolution": "1280x720@30",
+            "latency_reduction_ms": 12
+          }
+        },
+        {
+          "task": "request_slice_change",
+          "from": "network_orchestrator",
+          "status": "ok",
+          "payload": {
+            "new_slice": "mMTC",
+            "effective_lat_ms": 60,
+            "guaranteed_loss_pct": 0.8,
+            "duration_s": 300
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 60,
+        "jitter_ms": 15,
+        "loss_pct": 0.8,
+        "throughput_mbps": 2.0,
+        "edge_load": 0.5
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "status_check",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "speed_mps",
+              "energy",
+              "payloads"
+            ]
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "swarm_position_update",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "uav_id": "uav_001",
+            "request": "full_position_report"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 215.3,
+              "y": 142.7,
+              "z": 85.0,
+              "yaw": 285.0
+            },
+            "speed_mps": 15.0,
+            "energy": {
+              "battery_pct": 92.1
+            },
+            "payloads": [
+              {
+                "id": "main_imager",
+                "status": "active",
+                "bitrate_mbps": 4.0,
+                "storage_remaining_GB": 127.2
+              },
+              {
+                "id": "thermal_sensor",
+                "status": "active",
+                "bitrate_mbps": 4.0,
+                "storage_remaining_GB": 63.5
+              }
+            ]
+          }
+        },
+        {
+          "task": "swarm_position_update",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "uav_positions": [
+              {
+                "uav_id": "uav_002",
+                "pose": {
+                  "x": 320.0,
+                  "y": 210.0,
+                  "z": 95.0
+                },
+                "distance_m": 125.4
+              },
+              {
+                "uav_id": "uav_003",
+                "pose": {
+                  "x": 180.0,
+                  "y": 300.0,
+                  "z": 110.0
+                },
+                "distance_m": 198.7
+              }
+            ],
+            "conflicts": []
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 55,
+        "jitter_ms": 12,
+        "loss_pct": 0.7,
+        "throughput_mbps": 2.1,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "waypoint_adjust",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "adjust_waypoint",
+          "args": {
+            "waypoint_index": 1,
+            "new_alt_m": 110.0,
+            "new_speed_mps": 12.0,
+            "loiter_radius_m": 15.0
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "notify_flight_plan_change",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "uav_id": "uav_001",
+            "updated_plan": [
+              {
+                "x": 300.0,
+                "y": 200.0,
+                "z": 100.0,
+                "eta_s": 12.5
+              },
+              {
+                "x": 500.0,
+                "y": 400.0,
+                "z": 110.0,
+                "eta_s": 72.1
+              }
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "adjust_waypoint",
+          "result": {
+            "status": "updated",
+            "new_eta_s": [
+              12.5,
+              72.1
+            ],
+            "geofence_check": "ok",
+            "altitude_check": "ok"
+          }
+        },
+        {
+          "task": "notify_flight_plan_change",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "acknowledged_by": [
+              "uav_002",
+              "uav_003"
+            ],
+            "conflict_risk": "none"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 9,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 22.0,
+        "edge_load": 0.35
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "payload_prioritize",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "adjust_payload_priority",
+          "args": {
+            "payload_id": "thermal_sensor",
+            "priority": "high",
+            "bitrate_mbps": 6.0,
+            "resolution": "640x512@30"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "adjust_payload_priority",
+          "result": {
+            "payload_id": "thermal_sensor",
+            "status": "adjusted",
+            "new_bitrate_mbps": 6.0,
+            "new_resolution": "640x512@30",
+            "power_draw_W": 13.5,
+            "warning": "battery_impact"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 10,
+        "jitter_ms": 3,
+        "loss_pct": 0.2,
+        "throughput_mbps": 20.0,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "mission_continue",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "energy",
+              "sensors"
+            ]
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "request_weather_update",
+          "to": "weather_service",
+          "payload": {
+            "location": {
+              "x": 500.0,
+              "y": 400.0
+            },
+            "alt_m": 110.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 410.0,
+              "y": 320.0,
+              "z": 105.0,
+              "yaw": 295.0
+            },
+            "speed_mps": 12.0,
+            "energy": {
+              "battery_pct": 85.3
+            },
+            "sensors": {
+              "rgb": "ok",
+              "thermal": "ok",
+              "lidar": "offline",
+              "radar": "offline",
+              "gnss": "ok",
+              "imu": "ok"
+            }
+          }
+        },
+        {
+          "task": "request_weather_update",
+          "from": "weather_service",
+          "status": "ok",
+          "payload": {
+            "weather": "light_icing",
+            "wind_mps": 8.2,
+            "wind_dir_deg": 280.0,
+            "turbulence": "moderate",
+            "visibility_m": 5000
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 8,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 25.0,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "mission_rtb",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_waypoints",
+          "args": {
+            "waypoints": [
+              {
+                "x": 100.0,
+                "y": 100.0,
+                "z": 30.0,
+                "speed_mps": 15.0
+              }
+            ],
+            "loiter_radius_m": 0.0,
+            "land_on_completion": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_waypoints",
+          "result": {
+            "status": "accepted",
+            "waypoints_valid": true,
+            "geofence_check": "ok",
+            "altitude_check": "ok",
+            "eta_s": 45.2,
+            "battery_sufficient": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 20,
+        "jitter_ms": 4,
+        "loss_pct": 0.3,
+        "throughput_mbps": 90.0,
+        "edge_load": 0.7
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 217.5,
+    "env": {
+      "weather": "light_icing",
+      "wind_mps": 8.2,
+      "wind_dir_deg": 280.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        500.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1000.0,
+              0.0
+            ],
+            [
+              1000.0,
+              800.0
+            ],
+            [
+              200.0,
+              800.0
+            ],
+            [
+              0.0,
+              600.0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 0.0,
+        "yaw": 270.0
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 78.7
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "main_imager",
+          "status": "inactive",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 0.0,
+            "storage_used_GB": 1.2
+          }
+        },
+        {
+          "id": "thermal_sensor",
+          "status": "inactive",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 0.0,
+            "storage_used_GB": 0.8
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        500.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false,
+      "low_battery": false,
+      "sensor_failure": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764612680,
+    "ts_iso": "2025-12-01T18:11:20Z",
+    "gen_time_s": 93.0424485206604,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1487,
+      "completion_tokens": 5596,
+      "total_tokens": 7083,
+      "cost": 0.0117868,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.0005948,
+        "upstream_inference_completions_cost": 0.011192
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

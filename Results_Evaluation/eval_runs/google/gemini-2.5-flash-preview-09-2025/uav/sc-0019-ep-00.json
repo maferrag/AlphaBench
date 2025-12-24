@@ -1,0 +1,630 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "microburst_risk,gusts,crosswind_strong",
+      "wind_mps": 8.0,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        50.0,
+        200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              500
+            ],
+            [
+              500,
+              500
+            ],
+            [
+              500,
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 50.0,
+        "y": 50.0,
+        "z": 0.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 35.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "main_inspection",
+          "type": "dual_thermal_visual_camera",
+          "category": "imaging_thermal",
+          "mass_kg": 0.8,
+          "power_W": 45,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 8.0,
+            "storage_GB": 256
+          },
+          "operating": {
+            "fov_deg": 75,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 60,
+            "max_alt_m": 150,
+            "day_night": "both"
+          }
+        },
+        {
+          "id": "obstacle_detection",
+          "type": "radar",
+          "category": "sense_em",
+          "mass_kg": 0.6,
+          "power_W": 60,
+          "drag_cdA": 0.015,
+          "mount": "nose",
+          "operating": {
+            "range_m": 800
+          },
+          "constraints": {
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "fog"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        50.0,
+        200.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Acknowledge mission start and request initial command.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "battery_pct",
+              "pose"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "battery_pct": 100.0,
+            "pose": {
+              "x": 50.0,
+              "y": 50.0,
+              "z": 0.0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 2,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.01,
+        "throughput_mbps": 10,
+        "edge_load": 0.1
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Command takeoff and set initial waypoint for inspection.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "takeoff",
+          "args": {
+            "altitude_m": 100.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "set_waypoint",
+          "args": {
+            "x": 400.0,
+            "y": 400.0,
+            "z": 100.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "takeoff",
+          "result": {
+            "value": "command_received"
+          }
+        },
+        {
+          "tool": "set_waypoint",
+          "result": {
+            "value": "waypoint_queued"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3,
+        "jitter_ms": 0.6,
+        "loss_pct": 0.0,
+        "throughput_mbps": 12,
+        "edge_load": 0.15
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Execute takeoff and confirm altitude. Initiate high-bandwidth video stream.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "execute_waypoint",
+          "args": {}
+        },
+        {
+          "type": "mcp",
+          "name": "start_stream",
+          "args": {
+            "payload_id": "main_inspection",
+            "bitrate_mbps": 8.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "execute_waypoint",
+          "result": {
+            "value": "executing"
+          }
+        },
+        {
+          "tool": "start_stream",
+          "result": {
+            "value": "stream_initiated"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 15,
+        "jitter_ms": 2,
+        "loss_pct": 0.5,
+        "throughput_mbps": 8.5,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Request status update on weather and potential microburst risk.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_env_data",
+          "args": {
+            "fields": [
+              "weather",
+              "wind_mps"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_env_data",
+          "result": {
+            "weather": "microburst_risk,gusts,crosswind_strong",
+            "wind_mps": 9.5
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 1,
+        "loss_pct": 0.1,
+        "throughput_mbps": 10,
+        "edge_load": 0.35
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Acknowledge weather risk. Reduce speed and request swarm agent to monitor separation due to gusts.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_speed",
+          "args": {
+            "speed_mps": 20.0
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "separation_monitoring",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "threshold_m": 50,
+            "priority": "high"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_speed",
+          "result": {
+            "value": "speed_adjusted"
+          }
+        },
+        {
+          "task": "separation_monitoring",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "monitoring_active": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4,
+        "jitter_ms": 0.8,
+        "loss_pct": 0.05,
+        "throughput_mbps": 5,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Confirm speed reduction. Request a low-bandwidth status report on battery and current position.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "battery_pct",
+              "pose"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "battery_pct": 95.0,
+            "pose": {
+              "x": 150.0,
+              "y": 150.0,
+              "z": 100.0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 10,
+        "jitter_ms": 5,
+        "loss_pct": 5.0,
+        "throughput_mbps": 0.1,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Report status. Due to high network loss, temporarily pause high-bandwidth video stream.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "stop_stream",
+          "args": {
+            "payload_id": "main_inspection"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "stop_stream",
+          "result": {
+            "value": "stream_paused_due_to_qos"
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 12,
+        "jitter_ms": 6,
+        "loss_pct": 6.5,
+        "throughput_mbps": 0.08,
+        "edge_load": 0.85
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Approve stream pause. Command return to base (RTB) immediately due to weather and network degradation.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "return_to_base",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "return_to_base",
+          "result": {
+            "value": "rtb_initiated"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 20,
+        "jitter_ms": 10,
+        "loss_pct": 1.0,
+        "throughput_mbps": 2,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Confirm RTB execution and request final landing clearance.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 70.0,
+              "y": 70.0,
+              "z": 50.0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 1,
+        "loss_pct": 0.2,
+        "throughput_mbps": 5,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "Grant landing clearance.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "land",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "land",
+          "result": {
+            "value": "landing_command_sent"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.0,
+        "throughput_mbps": 10,
+        "edge_load": 0.6
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 350.0,
+    "env": {
+      "weather": "microburst_risk,gusts,crosswind_strong",
+      "wind_mps": 9.0,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        50.0,
+        200.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              500
+            ],
+            [
+              500,
+              500
+            ],
+            [
+              500,
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 55.0,
+        "y": 55.0,
+        "z": 0.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 80.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "main_inspection",
+          "type": "dual_thermal_visual_camera",
+          "category": "imaging_thermal",
+          "mass_kg": 0.8,
+          "power_W": 45,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 0.0,
+            "storage_GB": 256
+          },
+          "operating": {
+            "fov_deg": 75,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 60,
+            "max_alt_m": 150,
+            "day_night": "both"
+          }
+        },
+        {
+          "id": "obstacle_detection",
+          "type": "radar",
+          "category": "sense_em",
+          "mass_kg": 0.6,
+          "power_W": 60,
+          "drag_cdA": 0.015,
+          "mount": "nose",
+          "operating": {
+            "range_m": 800
+          },
+          "constraints": {
+            "weather_ok": [
+              "clear",
+              "light_rain",
+              "fog"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        50.0,
+        200.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764586477,
+    "ts_iso": "2025-12-01T10:54:37Z",
+    "gen_time_s": 31.40489411354065,
+    "attempts_used": 2,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1504,
+      "completion_tokens": 4236,
+      "total_tokens": 5740,
+      "cost": 0.0110412,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.0004512,
+        "upstream_inference_completions_cost": 0.01059
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

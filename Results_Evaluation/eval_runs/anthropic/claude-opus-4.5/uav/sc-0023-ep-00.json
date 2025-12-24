@@ -1,0 +1,1038 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "dust",
+      "wind_mps": 6.5,
+      "wind_dir_deg": 240.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        450.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              3000,
+              0
+            ],
+            [
+              3000,
+              2000
+            ],
+            [
+              0,
+              2000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 50.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 22.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.7,
+          "power_W": 25,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 4.0,
+            "storage_GB": 128
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 200,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust",
+              "low_visibility"
+            ]
+          }
+        },
+        {
+          "type": "radar",
+          "category": "sense_em",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.008,
+          "mount": "belly",
+          "operating": {
+            "range_m": 1500
+          },
+          "constraints": {
+            "weather_ok": [
+              "clear",
+              "dust",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        450.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Initialize mission and perform system diagnostics for pipeline inspection task in dusty conditions",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensors": [
+              "gnss",
+              "imu",
+              "barometer",
+              "radar"
+            ],
+            "include_pose": true
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "get_weather_update",
+          "args": {
+            "location": "current",
+            "forecast_minutes": 60
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 100.0,
+              "y": 100.0,
+              "z": 50.0,
+              "yaw": 90.0
+            },
+            "gnss": {
+              "fix": "3D",
+              "satellites": 12,
+              "hdop": 0.9
+            },
+            "imu": {
+              "accel_bias_ok": true,
+              "gyro_drift_ok": true
+            },
+            "barometer": {
+              "alt_m": 50.2,
+              "pressure_hPa": 1013.2
+            },
+            "radar": {
+              "status": "ok",
+              "targets_detected": 0
+            }
+          }
+        },
+        {
+          "tool": "get_weather_update",
+          "result": {
+            "current": "dust",
+            "visibility_m": 800,
+            "wind_mps": 6.5,
+            "wind_dir_deg": 240.0,
+            "forecast": "dust_clearing_in_45min"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 4,
+        "jitter_ms": 1.2,
+        "loss_pct": 0.01,
+        "throughput_mbps": 85,
+        "edge_load": 0.35
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Confirm mission parameters and authorize pipeline inspection along designated corridor",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "load_mission_plan",
+          "args": {
+            "mission_id": "PIPE-INS-2024-0892",
+            "corridor": {
+              "start": [
+                100,
+                100
+              ],
+              "end": [
+                2800,
+                1800
+              ],
+              "width_m": 50
+            },
+            "inspection_type": "thermal_anomaly"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "load_mission_plan",
+          "result": {
+            "status": "loaded",
+            "waypoints": 8,
+            "total_distance_m": 3420,
+            "estimated_time_min": 12,
+            "corridor_validated": true,
+            "geofence_check": "pass"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 12,
+        "jitter_ms": 3.5,
+        "loss_pct": 0.05,
+        "throughput_mbps": 220,
+        "edge_load": 0.42
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Begin mission execution, activate thermal camera and establish swarm coordination for coverage optimization",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "activate_payload",
+          "args": {
+            "payload": "thermal_camera_lwir",
+            "mode": "continuous_scan",
+            "bitrate_mbps": 4.0
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "set_flight_mode",
+          "args": {
+            "mode": "waypoint_follow",
+            "speed_mps": 18,
+            "altitude_m": 80
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "swarm_coordination",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "request": "register_mission",
+            "mission_id": "PIPE-INS-2024-0892",
+            "uav_id": "alpha-7",
+            "corridor_assignment": "primary"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "activate_payload",
+          "result": {
+            "payload": "thermal_camera_lwir",
+            "status": "active",
+            "recording": true,
+            "gimbal_stabilized": true
+          }
+        },
+        {
+          "tool": "set_flight_mode",
+          "result": {
+            "mode": "waypoint_follow",
+            "target_speed_mps": 18,
+            "target_alt_m": 80,
+            "eta_waypoint_1": "32s"
+          }
+        },
+        {
+          "task": "swarm_coordination",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "registered": true,
+            "swarm_size": 3,
+            "alpha_7_role": "lead",
+            "support_uavs": [
+              "beta-2",
+              "gamma-5"
+            ],
+            "deconfliction_active": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 15,
+        "jitter_ms": 4.1,
+        "loss_pct": 0.08,
+        "throughput_mbps": 195,
+        "edge_load": 0.51
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Request status update on thermal scan progress and any detected anomalies",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "query_inspection_status",
+          "args": {
+            "mission_id": "PIPE-INS-2024-0892",
+            "include_anomalies": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "query_inspection_status",
+          "result": {
+            "progress_pct": 18,
+            "waypoints_completed": 2,
+            "current_waypoint": 3,
+            "anomalies_detected": 1,
+            "anomaly_list": [
+              {
+                "id": "ANM-001",
+                "type": "thermal_hotspot",
+                "location": {
+                  "x": 420,
+                  "y": 380
+                },
+                "temp_delta_C": 12.4,
+                "confidence": 0.87,
+                "severity": "medium"
+              }
+            ],
+            "coverage_m2": 28500
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 18,
+        "jitter_ms": 5.2,
+        "loss_pct": 0.12,
+        "throughput_mbps": 165,
+        "edge_load": 0.58
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Investigate detected thermal anomaly with detailed scan and coordinate with support UAV for verification",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "navigate_to_poi",
+          "args": {
+            "poi_id": "ANM-001",
+            "approach_alt_m": 60,
+            "loiter_radius_m": 25
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "thermal_detailed_scan",
+          "args": {
+            "target": {
+              "x": 420,
+              "y": 380
+            },
+            "resolution": "high",
+            "duration_s": 15
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "anomaly_verification",
+          "to": "beta-2",
+          "payload": {
+            "anomaly_id": "ANM-001",
+            "location": {
+              "x": 420,
+              "y": 380
+            },
+            "request": "secondary_thermal_pass",
+            "altitude_m": 70
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "navigate_to_poi",
+          "result": {
+            "status": "navigating",
+            "eta_s": 28,
+            "current_pose": {
+              "x": 285,
+              "y": 240,
+              "z": 75
+            }
+          }
+        },
+        {
+          "tool": "thermal_detailed_scan",
+          "result": {
+            "status": "initiated",
+            "estimated_completion_s": 15,
+            "buffer_allocated": true
+          }
+        },
+        {
+          "task": "anomaly_verification",
+          "from": "beta-2",
+          "status": "ok",
+          "payload": {
+            "accepted": true,
+            "eta_to_target_s": 45,
+            "will_approach_from": "northeast",
+            "altitude_m": 70
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 6,
+        "jitter_ms": 1.8,
+        "loss_pct": 0.02,
+        "throughput_mbps": 92,
+        "edge_load": 0.48
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Alert about incoming traffic and request immediate deconfliction",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "broadcast_traffic_alert",
+          "args": {
+            "alert_type": "manned_aircraft",
+            "bearing_deg": 315,
+            "distance_m": 2200,
+            "altitude_m": 120,
+            "closure_rate_mps": 35,
+            "priority": "high"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "broadcast_traffic_alert",
+          "result": {
+            "alert_id": "TFC-7821",
+            "broadcast_status": "sent",
+            "recipients": [
+              "alpha-7",
+              "beta-2",
+              "gamma-5"
+            ],
+            "atc_notified": true
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3,
+        "jitter_ms": 0.8,
+        "loss_pct": 0.005,
+        "throughput_mbps": 78,
+        "edge_load": 0.62
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Execute collision avoidance maneuver and coordinate swarm descent to safe altitude",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "execute_avoidance",
+          "args": {
+            "maneuver": "descend_and_hold",
+            "target_alt_m": 35,
+            "speed_reduction_pct": 50,
+            "hold_position": true
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "collision_avoidance",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "alert_id": "TFC-7821",
+            "command": "emergency_descend",
+            "target_alt_m": 40,
+            "formation": "scatter_low"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "execute_avoidance",
+          "result": {
+            "status": "executing",
+            "current_alt_m": 58,
+            "target_alt_m": 35,
+            "descent_rate_mps": 4.5,
+            "position_hold": true,
+            "eta_safe_s": 5
+          }
+        },
+        {
+          "task": "collision_avoidance",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "swarm_response": "all_descending",
+            "beta-2_alt_m": 52,
+            "gamma-5_alt_m": 48,
+            "separation_maintained": true,
+            "min_separation_m": 180
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 2,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.002,
+        "throughput_mbps": 65,
+        "edge_load": 0.71
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Confirm traffic has cleared and authorize mission resumption",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "check_traffic_status",
+          "args": {
+            "alert_id": "TFC-7821"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "authorize_resume",
+          "args": {
+            "mission_id": "PIPE-INS-2024-0892",
+            "clearance_code": "CLR-RESUME-4472"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "check_traffic_status",
+          "result": {
+            "alert_id": "TFC-7821",
+            "status": "cleared",
+            "manned_aircraft_position": {
+              "bearing_deg": 135,
+              "distance_m": 3800,
+              "altitude_m": 150
+            },
+            "threat_level": "none"
+          }
+        },
+        {
+          "tool": "authorize_resume",
+          "result": {
+            "authorization": "granted",
+            "mission_id": "PIPE-INS-2024-0892",
+            "resume_from_waypoint": 3,
+            "restrictions": "none"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 22,
+        "jitter_ms": 8.5,
+        "loss_pct": 0.18,
+        "throughput_mbps": 95,
+        "edge_load": 0.78
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Resume mission with degraded network adaptation, reduce video bitrate and prioritize critical telemetry",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "adjust_datalink",
+          "args": {
+            "mode": "degraded_network",
+            "video_bitrate_mbps": 1.5,
+            "telemetry_priority": "high",
+            "buffer_locally": true
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "resume_flight_plan",
+          "args": {
+            "from_waypoint": 3,
+            "altitude_m": 80,
+            "speed_mps": 16
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "swarm_coordination",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "command": "resume_formation",
+            "formation": "line_abreast",
+            "spacing_m": 150
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "adjust_datalink",
+          "result": {
+            "mode": "degraded_network",
+            "video_bitrate_mbps": 1.5,
+            "local_buffer_active": true,
+            "telemetry_interval_ms": 100,
+            "compression": "h265_low"
+          }
+        },
+        {
+          "tool": "resume_flight_plan",
+          "result": {
+            "status": "resumed",
+            "current_waypoint": 3,
+            "pose": {
+              "x": 420,
+              "y": 380,
+              "z": 80
+            },
+            "speed_mps": 16
+          }
+        },
+        {
+          "task": "swarm_coordination",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "formation": "line_abreast",
+            "all_uavs_resumed": true,
+            "beta-2_offset": {
+              "x": -150,
+              "y": 0
+            },
+            "gamma-5_offset": {
+              "x": 150,
+              "y": 0
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 35,
+        "jitter_ms": 12.0,
+        "loss_pct": 0.25,
+        "throughput_mbps": 45,
+        "edge_load": 0.85
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "Request battery status check and mission completion estimate given current conditions",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "sensors": [
+              "battery",
+              "power_system"
+            ],
+            "include_estimates": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "battery_pct": 72.4,
+            "voltage_V": 22.1,
+            "current_draw_A": 18.5,
+            "power_consumption_W": 409,
+            "estimated_remaining_min": 28,
+            "mission_completion_estimate": {
+              "feasible": true,
+              "margin_min": 16,
+              "return_to_home_reserve_pct": 22
+            }
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 42,
+        "jitter_ms": 15.0,
+        "loss_pct": 0.3,
+        "throughput_mbps": 32,
+        "edge_load": 0.88
+      }
+    },
+    {
+      "turn": 11,
+      "speaker": "agent",
+      "intent": "Complete remaining inspection waypoints and compile anomaly report with network recovery",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "execute_waypoint_sequence",
+          "args": {
+            "waypoints": [
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "speed_mps": 18,
+            "scan_mode": "continuous"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "compile_inspection_report",
+          "args": {
+            "mission_id": "PIPE-INS-2024-0892",
+            "include_thermal_data": true,
+            "anomaly_classification": "auto"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "execute_waypoint_sequence",
+          "result": {
+            "status": "completed",
+            "waypoints_visited": [
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "final_pose": {
+              "x": 2750,
+              "y": 1720,
+              "z": 80
+            },
+            "additional_anomalies": 2,
+            "total_anomalies": 3
+          }
+        },
+        {
+          "tool": "compile_inspection_report",
+          "result": {
+            "report_id": "RPT-PIPE-2024-0892",
+            "anomalies_total": 3,
+            "anomaly_summary": [
+              {
+                "id": "ANM-001",
+                "severity": "medium",
+                "verified": true
+              },
+              {
+                "id": "ANM-002",
+                "severity": "low",
+                "type": "minor_leak_signature"
+              },
+              {
+                "id": "ANM-003",
+                "severity": "high",
+                "type": "major_thermal_deviation",
+                "recommended_action": "immediate_ground_inspection"
+              }
+            ],
+            "coverage_pct": 98.2,
+            "data_size_GB": 2.8
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 14,
+        "jitter_ms": 4.0,
+        "loss_pct": 0.06,
+        "throughput_mbps": 180,
+        "edge_load": 0.55
+      }
+    },
+    {
+      "turn": 12,
+      "speaker": "user",
+      "intent": "Acknowledge report and command return to home with final swarm disbandment",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "command_rth",
+          "args": {
+            "uav_id": "alpha-7",
+            "mode": "direct",
+            "landing_site": "home_base",
+            "priority": "normal"
+          }
+        },
+        {
+          "type": "a2a",
+          "task": "swarm_disbandment",
+          "to": "uav_swarm_agent",
+          "payload": {
+            "mission_id": "PIPE-INS-2024-0892",
+            "command": "disband",
+            "individual_rth": true
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "command_rth",
+          "result": {
+            "status": "rth_initiated",
+            "route": "direct",
+            "distance_to_home_m": 2890,
+            "eta_min": 4.2,
+            "landing_site": "home_base",
+            "battery_on_arrival_pct": 58
+          }
+        },
+        {
+          "task": "swarm_disbandment",
+          "from": "uav_swarm_agent",
+          "status": "ok",
+          "payload": {
+            "swarm_disbanded": true,
+            "beta-2_rth": "initiated",
+            "gamma-5_rth": "initiated",
+            "mission_logged": true,
+            "total_flight_time_min": 14.8
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 11,
+        "jitter_ms": 3.2,
+        "loss_pct": 0.04,
+        "throughput_mbps": 210,
+        "edge_load": 0.45
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 888.0,
+    "env": {
+      "weather": "dust_clearing",
+      "wind_mps": 5.2,
+      "wind_dir_deg": 235.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        450.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              3000,
+              0
+            ],
+            [
+              3000,
+              2000
+            ],
+            [
+              0,
+              2000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 0.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 0.0,
+      "energy": {
+        "battery_pct": 58.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.7,
+          "power_W": 25,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 4.0,
+            "storage_GB": 128,
+            "recorded_GB": 2.8
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 200,
+            "day_night": "both",
+            "weather_ok": [
+              "clear",
+              "dust",
+              "low_visibility"
+            ]
+          }
+        },
+        {
+          "type": "radar",
+          "category": "sense_em",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.008,
+          "mount": "belly",
+          "operating": {
+            "range_m": 1500
+          },
+          "constraints": {
+            "weather_ok": [
+              "clear",
+              "dust",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        450.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764594049,
+    "ts_iso": "2025-12-01T13:00:49Z",
+    "gen_time_s": 66.51744842529297,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1510,
+      "completion_tokens": 4573,
+      "total_tokens": 6083,
+      "cost": 0.121875,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.00755,
+        "upstream_inference_completions_cost": 0.114325
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

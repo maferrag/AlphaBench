@@ -1,0 +1,620 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "crosswind_strong,thermal_updrafts,temperature_extremes_cold",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        30.0,
+        400.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              2000,
+              0
+            ],
+            [
+              2000,
+              1800
+            ],
+            [
+              0,
+              1800
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 100.0,
+        "y": 100.0,
+        "z": 30.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 35.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.8,
+          "power_W": 25,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 4.0,
+            "storage_GB": 128
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 50,
+            "max_alt_m": 300,
+            "day_night": "both"
+          }
+        },
+        {
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.008,
+          "mount": "belly",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 15.0,
+            "storage_GB": 256
+          },
+          "operating": {
+            "fov_deg": 360,
+            "range_m": 150
+          },
+          "constraints": {
+            "max_alt_m": 200,
+            "weather_ok": [
+              "clear",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        30.0,
+        400.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Acknowledge mission start and request initial altitude change for thermal imaging.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_waypoint",
+          "args": {
+            "x": 100.0,
+            "y": 100.0,
+            "z": 60.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_waypoint",
+          "result": {
+            "value": "waypoint_set"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 15,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 150,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Confirm altitude change and request immediate thermal data stream setup.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "configure_sensor",
+          "args": {
+            "sensor_type": "thermal_camera_lwir",
+            "stream_mode": "high_quality_video"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "configure_sensor",
+          "result": {
+            "value": "configuration_pending"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 18,
+        "jitter_ms": 3,
+        "loss_pct": 0.2,
+        "throughput_mbps": 145,
+        "edge_load": 0.35
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Report current status, confirm altitude reached, and initiate thermal stream. Request network slice change for reliability.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose.z",
+              "energy.battery_pct"
+            ]
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "start_data_stream",
+          "args": {
+            "sensor_type": "thermal_camera_lwir",
+            "bitrate_mbps": 4.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "value": "success"
+          }
+        },
+        {
+          "tool": "start_data_stream",
+          "result": {
+            "value": "streaming_active"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 25,
+        "jitter_ms": 5,
+        "loss_pct": 0.5,
+        "throughput_mbps": 130,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Acknowledge stream start. Request a coordinated maneuver with a hypothetical swarm agent (A2A) to sweep the area.",
+      "actions": [
+        {
+          "type": "a2a",
+          "task": "coordinated_sweep",
+          "to": "uav_swarm_agent_01",
+          "payload": {
+            "area_id": "sector_alpha",
+            "altitude": 60,
+            "speed": 20
+          }
+        }
+      ],
+      "obs": [
+        {
+          "task": "coordinated_sweep",
+          "from": "uav_swarm_agent_01",
+          "status": "ack",
+          "payload": {
+            "eta_s": 15,
+            "path_id": "sweep_001"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 1,
+        "loss_pct": 0.05,
+        "throughput_mbps": 50,
+        "edge_load": 0.5
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Confirm A2A coordination. Report network degradation and switch to a lower bitrate stream (mMTC) to maintain link stability.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_network_status",
+          "args": {}
+        },
+        {
+          "type": "mcp",
+          "name": "adjust_data_stream",
+          "args": {
+            "sensor_type": "thermal_camera_lwir",
+            "bitrate_mbps": 0.5,
+            "resolution": "320x256@15"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_network_status",
+          "result": {
+            "value": "degraded"
+          }
+        },
+        {
+          "tool": "adjust_data_stream",
+          "result": {
+            "value": "streaming_adjusted"
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 150,
+        "jitter_ms": 50,
+        "loss_pct": 5.0,
+        "throughput_mbps": 0.8,
+        "edge_load": 0.95
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Acknowledge network adaptation and reduced stream quality. Request a critical status check (URLLC priority).",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_critical_status",
+          "args": {
+            "fields": [
+              "pose",
+              "speed_mps"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_critical_status",
+          "result": {
+            "value": "success"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 8,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 1.5,
+        "edge_load": 0.98
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Report stable flight path and request permission to re-enable Lidar now that the weather is slightly clearer (A2A coordination required).",
+      "actions": [
+        {
+          "type": "a2a",
+          "task": "check_weather_clearance",
+          "to": "uav_weather_agent",
+          "payload": {
+            "sensor": "lidar",
+            "altitude": 60
+          }
+        }
+      ],
+      "obs": [
+        {
+          "task": "check_weather_clearance",
+          "from": "uav_weather_agent",
+          "status": "ok",
+          "payload": {
+            "lidar_safe": true,
+            "weather_condition": "light_rain"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 6,
+        "jitter_ms": 1,
+        "loss_pct": 0.05,
+        "throughput_mbps": 1.8,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Grant permission for Lidar activation and request immediate activation.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "activate_sensor",
+          "args": {
+            "sensor_type": "lidar"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "activate_sensor",
+          "result": {
+            "value": "activation_success"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 20,
+        "jitter_ms": 4,
+        "loss_pct": 0.3,
+        "throughput_mbps": 100,
+        "edge_load": 0.7
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Confirm Lidar activation and initiate high-bandwidth point cloud streaming, leveraging improved eMBB conditions.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "start_data_stream",
+          "args": {
+            "sensor_type": "lidar",
+            "bitrate_mbps": 15.0
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "start_data_stream",
+          "result": {
+            "value": "streaming_active"
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 12,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 150,
+        "edge_load": 0.5
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "intent": "Acknowledge high-rate stream. Request mission termination and return to base (RTB) sequence.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "initiate_rtb",
+          "args": {
+            "landing_zone": "home_base"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "initiate_rtb",
+          "result": {
+            "value": "rtb_sequence_started"
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 1,
+        "loss_pct": 0.05,
+        "throughput_mbps": 10,
+        "edge_load": 0.4
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 300.0,
+    "env": {
+      "weather": "crosswind_strong,thermal_updrafts,temperature_extremes_cold",
+      "wind_mps": 8.5,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        30.0,
+        400.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              2000,
+              0
+            ],
+            [
+              2000,
+              1800
+            ],
+            [
+              0,
+              1800
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 105.0,
+        "y": 105.0,
+        "z": 30.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 10.0,
+      "energy": {
+        "battery_pct": 85.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "ok",
+        "radar": "ok",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.8,
+          "power_W": 25,
+          "drag_cdA": 0.005,
+          "mount": "gimbal",
+          "data": {
+            "stream": "video",
+            "bitrate_mbps": 0.5,
+            "storage_GB": 128
+          },
+          "operating": {
+            "fov_deg": 55,
+            "resolution": "320x256@15",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "min_alt_m": 50,
+            "max_alt_m": 300,
+            "day_night": "both"
+          }
+        },
+        {
+          "type": "lidar",
+          "category": "imaging_advanced",
+          "mass_kg": 1.2,
+          "power_W": 45,
+          "drag_cdA": 0.008,
+          "mount": "belly",
+          "data": {
+            "stream": "pointcloud",
+            "bitrate_mbps": 15.0,
+            "storage_GB": 256
+          },
+          "operating": {
+            "fov_deg": 360,
+            "range_m": 150
+          },
+          "constraints": {
+            "max_alt_m": 200,
+            "weather_ok": [
+              "clear",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        30.0,
+        400.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764586342,
+    "ts_iso": "2025-12-01T10:52:22Z",
+    "gen_time_s": 42.45268940925598,
+    "attempts_used": 3,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1543,
+      "completion_tokens": 4702,
+      "total_tokens": 6245,
+      "cost": 0.0122179,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.0004629,
+        "upstream_inference_completions_cost": 0.011755
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}

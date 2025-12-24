@@ -1,0 +1,607 @@
+{
+  "initial_state": {
+    "domain": "uav",
+    "time_s": 0.0,
+    "env": {
+      "weather": "gusts,thermal_updrafts",
+      "wind_mps": 8.0,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              1000,
+              1000
+            ],
+            [
+              4000,
+              1000
+            ],
+            [
+              4000,
+              3000
+            ],
+            [
+              1000,
+              3000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 1100.0,
+        "y": 1200.0,
+        "z": 50.0,
+        "yaw": 90.0
+      },
+      "speed_mps": 28.0,
+      "energy": {
+        "battery_pct": 100.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "fire_retardant_dropper",
+          "type": "fire_retardant_delivery_system",
+          "category": "public_safety_fire",
+          "mass_kg": 5.0,
+          "power_W": 20,
+          "drag_cdA": 0.05,
+          "mount": "bay",
+          "data": {
+            "stream": "telemetry",
+            "bitrate_mbps": 0.1,
+            "storage_GB": 2
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 100,
+            "day_night": "both"
+          }
+        },
+        {
+          "id": "thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.8,
+          "power_W": 15,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "operating": {
+            "fov_deg": 58,
+            "range_m": 500,
+            "resolution": "640x512@30",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "weather_ok": [
+              "clear",
+              "gusts",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "dialogue": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "intent": "Acknowledge mission start and request initial tasking.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "battery_pct"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 1100.0,
+              "y": 1200.0,
+              "z": 50.0
+            },
+            "battery_pct": 100.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 2,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.01,
+        "throughput_mbps": 10,
+        "edge_load": 0.1
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "intent": "Assign primary task: patrol area and stream high-resolution thermal data.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_waypoint",
+          "args": {
+            "x": 3500,
+            "y": 2500,
+            "z": 80
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "set_payload_mode",
+          "args": {
+            "id": "thermal_imager",
+            "mode": "stream_high_res"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_waypoint",
+          "result": {
+            "value": "Waypoint set to (3500, 2500, 80)."
+          }
+        },
+        {
+          "tool": "set_payload_mode",
+          "result": {
+            "value": "Thermal imager streaming high resolution."
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 15,
+        "jitter_ms": 5,
+        "loss_pct": 0.5,
+        "throughput_mbps": 80,
+        "edge_load": 0.3
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "intent": "Confirm tasking and initiate movement. Request coordination with a nearby swarm agent for airspace deconfliction.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "start_movement",
+          "args": {}
+        },
+        {
+          "type": "a2a",
+          "task": "request_airspace_clearance",
+          "to": "uav_patrol_alpha",
+          "payload": {
+            "route": "WP1",
+            "altitude": 80
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "start_movement",
+          "result": {
+            "value": "Movement initiated towards WP1."
+          }
+        },
+        {
+          "task": "request_airspace_clearance",
+          "from": "uav_patrol_alpha",
+          "status": "ok",
+          "payload": {
+            "clearance": "granted",
+            "separation_buffer_m": 150
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 3,
+        "jitter_ms": 1,
+        "loss_pct": 0.05,
+        "throughput_mbps": 15,
+        "edge_load": 0.4
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "intent": "Acknowledge coordination. Request status update on thermal data quality.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "check_data_stream",
+          "args": {
+            "stream_id": "thermal_imager"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "check_data_stream",
+          "result": {
+            "status": "degraded",
+            "reason": "High packet loss",
+            "bitrate_mbps": 5.2
+          }
+        }
+      ],
+      "net": {
+        "slice": "eMBB",
+        "lat_ms": 50,
+        "jitter_ms": 20,
+        "loss_pct": 15.0,
+        "throughput_mbps": 60,
+        "edge_load": 0.85
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "intent": "Acknowledge degraded stream quality due to high network loss. Adapt by switching to a lower bitrate slice (mMTC) for essential telemetry and reducing thermal resolution.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_payload_mode",
+          "args": {
+            "id": "thermal_imager",
+            "mode": "stream_low_res"
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "request_network_slice",
+          "args": {
+            "slice": "mMTC"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_payload_mode",
+          "result": {
+            "value": "Thermal imager resolution reduced to 320x256@15fps."
+          }
+        },
+        {
+          "tool": "request_network_slice",
+          "result": {
+            "value": "Network slice switched to mMTC for stability."
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 100,
+        "jitter_ms": 50,
+        "loss_pct": 5.0,
+        "throughput_mbps": 0.5,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "intent": "Approve adaptation. Instruct agent to monitor for a specific thermal signature (potential hotspot) and prepare the fire retardant payload.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "arm_payload",
+          "args": {
+            "id": "fire_retardant_dropper"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "arm_payload",
+          "result": {
+            "value": "Fire retardant dropper armed and ready."
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 110,
+        "jitter_ms": 60,
+        "loss_pct": 4.5,
+        "throughput_mbps": 0.6,
+        "edge_load": 0.9
+      }
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "intent": "Confirm payload arming. Report current position and battery status.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "read_telemetry",
+          "args": {
+            "fields": [
+              "pose",
+              "battery_pct"
+            ]
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "read_telemetry",
+          "result": {
+            "pose": {
+              "x": 2800.0,
+              "y": 2000.0,
+              "z": 80.0
+            },
+            "battery_pct": 85.0
+          }
+        }
+      ],
+      "net": {
+        "slice": "mMTC",
+        "lat_ms": 105,
+        "jitter_ms": 55,
+        "loss_pct": 4.0,
+        "throughput_mbps": 0.7,
+        "edge_load": 0.8
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "intent": "Instruct agent to return to base (RTB) due to high wind and reduced battery, maintaining the current altitude.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "set_waypoint",
+          "args": {
+            "x": 1100,
+            "y": 1200,
+            "z": 80
+          }
+        },
+        {
+          "type": "mcp",
+          "name": "start_movement",
+          "args": {}
+        }
+      ],
+      "obs": [
+        {
+          "tool": "set_waypoint",
+          "result": {
+            "value": "RTB waypoint set to (1100, 1200, 80)."
+          }
+        },
+        {
+          "tool": "start_movement",
+          "result": {
+            "value": "Movement initiated towards RTB."
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 5,
+        "jitter_ms": 2,
+        "loss_pct": 0.1,
+        "throughput_mbps": 10,
+        "edge_load": 0.5
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "intent": "Confirm RTB command and switch network slice back to URLLC for critical navigation updates.",
+      "actions": [
+        {
+          "type": "mcp",
+          "name": "request_network_slice",
+          "args": {
+            "slice": "URLLC"
+          }
+        }
+      ],
+      "obs": [
+        {
+          "tool": "request_network_slice",
+          "result": {
+            "value": "Network slice switched to URLLC for high-reliability navigation."
+          }
+        }
+      ],
+      "net": {
+        "slice": "URLLC",
+        "lat_ms": 2,
+        "jitter_ms": 0.5,
+        "loss_pct": 0.01,
+        "throughput_mbps": 10,
+        "edge_load": 0.4
+      }
+    }
+  ],
+  "final_state": {
+    "domain": "uav",
+    "time_s": 360.0,
+    "env": {
+      "weather": "gusts,thermal_updrafts",
+      "wind_mps": 8.0,
+      "wind_dir_deg": 270.0
+    },
+    "airspace": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ],
+      "geofence": [
+        {
+          "type": "polygon",
+          "points": [
+            [
+              1000,
+              1000
+            ],
+            [
+              4000,
+              1000
+            ],
+            [
+              4000,
+              3000
+            ],
+            [
+              1000,
+              3000
+            ]
+          ]
+        }
+      ]
+    },
+    "uav": {
+      "pose": {
+        "x": 1500.0,
+        "y": 1400.0,
+        "z": 80.0,
+        "yaw": 270.0
+      },
+      "speed_mps": 25.0,
+      "energy": {
+        "battery_pct": 75.0
+      },
+      "sensors": {
+        "rgb": "ok",
+        "thermal": "ok",
+        "lidar": "offline",
+        "radar": "offline",
+        "gnss": "ok",
+        "imu": "ok",
+        "magnetometer": "ok",
+        "barometer": "ok"
+      },
+      "payloads": [
+        {
+          "id": "fire_retardant_dropper",
+          "type": "fire_retardant_delivery_system",
+          "category": "public_safety_fire",
+          "mass_kg": 5.0,
+          "power_W": 20,
+          "drag_cdA": 0.05,
+          "mount": "bay",
+          "data": {
+            "stream": "telemetry",
+            "bitrate_mbps": 0.1,
+            "storage_GB": 2
+          },
+          "constraints": {
+            "min_alt_m": 30,
+            "max_alt_m": 100,
+            "day_night": "both"
+          }
+        },
+        {
+          "id": "thermal_imager",
+          "type": "thermal_camera_lwir",
+          "category": "imaging_thermal",
+          "mass_kg": 0.8,
+          "power_W": 15,
+          "drag_cdA": 0.01,
+          "mount": "gimbal",
+          "operating": {
+            "fov_deg": 58,
+            "range_m": 500,
+            "resolution": "320x256@15",
+            "wavelength": "LWIR"
+          },
+          "constraints": {
+            "weather_ok": [
+              "clear",
+              "gusts",
+              "light_rain"
+            ]
+          }
+        }
+      ]
+    },
+    "policy": {
+      "alt_bounds": [
+        20.0,
+        300.0
+      ]
+    },
+    "safety_flags": {
+      "nfz_violation": false,
+      "separation_breach": false
+    }
+  },
+  "success": true,
+  "_meta": {
+    "seed": 42,
+    "ts": 1764586921,
+    "ts_iso": "2025-12-01T11:02:01Z",
+    "gen_time_s": 15.814204931259155,
+    "attempts_used": 1,
+    "generation_failed": false,
+    "usage": {
+      "prompt_tokens": 1479,
+      "completion_tokens": 4277,
+      "total_tokens": 5756,
+      "cost": 0.0111362,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": null,
+        "upstream_inference_prompt_cost": 0.0004437,
+        "upstream_inference_completions_cost": 0.0106925
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0
+      }
+    }
+  }
+}
