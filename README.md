@@ -682,6 +682,13 @@ Full evaluation methodology is described in the accompanying paper.
 
 ---
 
+## Leaderboard
+
+Performance comparison of Large Language Models (LLMs) across the $\alpha^3$ composite score, individual evaluation pillars, and efficiency statistics for UAV missions under dynamic 6G network conditions.
+
+![Alpha3_leaderboard](Figures/Alpha3_leaderboard.jpg)
+
+
 ---
 
 ## LLM Benchmark Results
@@ -723,14 +730,24 @@ Moderate failure rates are measured for GPT-5.2-chat (0.14), Kimi-K2-Thinking (0
 ### Mean Generation Time
 ![Mean generation time](Figures/figure4a_uav_time.png)
 
+Figure  reports the mean generation time per episode for all evaluated LLMs, revealing substantial variation in computational latency across models. The fastest model is chatgpt-4o-latest, which completes an episode in approximately $10.6$ seconds, followed by gpt-5.1-chat and gpt-5.2-chat with $19.0$ and $26.0$ seconds, respectively. Lightweight and latency-optimized models such as gemini-2.5-flash-preview-09-2025 also exhibit low response times ($27.1$ seconds), making them suitable for time-critical UAV missions. In contrast, larger reasoning-oriented models incur significantly higher delays. For instance, mistral-medium-3.1 and gemini-3-pro-preview require $115.8$ and $119.8$ seconds per episode, respectively, while deepseek-v3.2 and kimi-k2-thinking exceed $290$ seconds, reaching up to $314.0$ seconds. This highlights a clear trade-off between advanced reasoning capabilities and real-time responsiveness in autonomous UAV operations.
+
+
 ### Mean Token Usage
 ![Mean token usage](Figures/figure4b_uav_tokens.png)
+
+Figure presents the mean total token consumption per episode, which reflects both computational and economic cost. The most token-efficient model is gpt-5.1-chat, consuming approximately $2{,}854$ tokens per episode, followed by gpt-5.2-chat ($3{,}914$ tokens) and chatgpt-4o-latest ($4{,}032$ tokens). Mid-range models such as gpt-4.1-mini and qwen3-max require between $4{,}754$ and $5{,}329$ tokens, offering a balanced trade-off between performance and cost. In contrast, reasoning-intensive models demonstrate significantly higher token usage. Notably, mistral-medium-3.1 and gemini-3-pro-preview consume $7{,}370$ and $7{,}526$ tokens, respectively, while kimi-k2-thinking reaches the highest consumption at $8{,}537$ tokens. These results indicate that while advanced reasoning improves decision quality, it introduces substantial resource overhead, potentially constraining scalability and real-time deployment in UAV systems.
+
 
 ### α³ Efficiency (Time)
 ![α³ per second efficiency](Figures/figure3b_uav_efficiency_time.png)
 
+Figure illustrates the relationship between mean score and temporal efficiency, measured as $\alpha^3$ per second. Once again, chatgpt-4o-latest stands out by combining a high mean score of approximately 0.98 with the highest temporal efficiency, reaching nearly 0.09 $\alpha^3$ per second. The model gpt-5.1-chat follows with a mean score close to 0.99 and a time efficiency of about 0.043. In comparison, gpt-5.2-chat and qwen3-max achieve moderate temporal efficiency values around 0.02 and 0.01, respectively, despite maintaining strong mean scores above 0.97. Several other models, including kimi-k2-thinking and deepseek-v3.2, cluster near the bottom of the plot with $\alpha^3$ per second values below 0.01, indicating that their reasoning quality comes at a substantially higher computational time cost.
+
 ### α³ Efficiency (Tokens)
 ![α³ per 1K tokens efficiency](Figures/figure3a_uav_efficiency_tokens.png)
+
+Figure analyzes the trade-off between model quality and token efficiency by plotting the mean score against the $\alpha^3$ score per 1K tokens. Models located in the upper-right region achieve both high accuracy and strong token efficiency. The best-performing model in this setting is gpt-5.1-chat, which attains a mean score of approximately 0.99 while reaching the highest $\alpha^3$ per 1K tokens value of about 0.29. Similarly, chatgpt-4o-latest demonstrates a strong balance with a mean score close to 0.98 and a token efficiency of around 0.24. Other competitive models such as qwen3-max and gpt-4.1-mini achieve mean scores above 0.97 with $\alpha^3$ per 1K tokens values of approximately 0.17 and 0.16, respectively. In contrast, several models with comparable mean scores exhibit substantially lower efficiency. For example, gemini-3-pro-preview reaches a mean score near 0.95 but achieves only about 0.02 $\alpha^3$ per 1K tokens, highlighting a significant efficiency gap despite acceptable accuracy.
 
 ---
 
