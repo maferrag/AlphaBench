@@ -1,11 +1,11 @@
-# α³-Bench: An Open Benchmark Dataset for Conversational Reasoning in Autonomous UAV Systems
+# $\alpha^3$-Bench: A Unified Benchmark of Safety, Robustness, and Efficiency for LLM-Based UAV Agents over 6G Networks
 
 α³-Bench is an open, large-scale benchmark dataset for evaluating **LLM-based agents** in **autonomous UAV systems** through **multi-turn conversational reasoning** under realistic **6G network conditions**.  
 It formulates UAV autonomy as a dialogue-driven decision-making problem, enabling systematic assessment of reasoning, safety, interaction quality, and network-aware control.
 
 🌐 **Project Page**: https://github.com/maferrag/AlphaBench
 
-📄 **Research Paper**: α³-Bench: Who Wins the Conversational Reasoning Challenge for LLM Agents in 6G-Enabled Autonomous UAV Systems?
+📄 **Research Paper**: $\alpha^3$-Bench: A Unified Benchmark of Safety, Robustness, and Efficiency for LLM-Based UAV Agents over 6G Networks
 
 ---
 
@@ -778,5 +778,21 @@ The dataset is released under the **Creative Commons Attribution 4.0 (CC BY 4.0)
 
 ## Contact
 For questions, issues, or collaboration:
-- 📧 mohamed.ferrag@uaeu.ac.ae  
-- 🌐 https://github.com/maferrag
+
+<p align="center">
+  <b>Dr. Mohamed Amine Ferrag</b><br>
+  Associate Professor, Department of Computer and Network Engineering<br>
+  College of Information Technology, United Arab Emirates University (UAEU)<br>
+  Al Ain, United Arab Emirates<br><br>
+
+  <a href="mailto:mohamed.amine.ferrag@gmail.com">mohamed.amine.ferrag@gmail.com</a><br>
+  <a href="mailto:mohamed.ferrag@uaeu.ac.ae">mohamed.ferrag@uaeu.ac.ae</a><br><br>
+</p>
+
+
+  🌐 <a href="https://scholar.google.fr/citations?user=IkPeqxMAAAAJ&hl=fr&oi=ao">Google Scholar</a> |
+  🔗 <a href="https://www.scopus.com/authid/detail.uri?authorId=56115001200">Scopus</a> |
+  🧭 <a href="https://www.webofscience.com/wos/author/rid/M-2909-2016">Web of Science</a> |
+  💼 <a href="https://www.linkedin.com/in/mohamed-amine-ferrag-phd-36390243/">LinkedIn</a>
+</p>
+
