@@ -7,6 +7,8 @@ It formulates UAV autonomy as a dialogue-driven decision-making problem, enablin
 
 📄 **Research Paper**: $\alpha^3$-Bench: A Unified Benchmark of Safety, Robustness, and Efficiency for LLM-Based UAV Agents over 6G Networks ([https://arxiv.org/pdf/2601.03281](https://arxiv.org/pdf/2601.03281) )
 
+👉 If you are looking to evaluate your LLM model using our benchmark, please feel free to contact us at 📩 mohamed.ferrag@uaeu.ac.ae
+
 ---
 
 ## Overview
