@@ -5,7 +5,7 @@ It formulates UAV autonomy as a dialogue-driven decision-making problem, enablin
 
 🌐 **Project Page**: https://github.com/maferrag/AlphaBench
 
-📄 **Research Paper**: $\alpha^3$-Bench: A Unified Benchmark of Safety, Robustness, and Efficiency for LLM-Based UAV Agents over 6G Networks
+📄 **Research Paper**: $\alpha^3$-Bench: A Unified Benchmark of Safety, Robustness, and Efficiency for LLM-Based UAV Agents over 6G Networks ([[https://github.com/maferrag/AlphaBench](https://arxiv.org/pdf/2601.03281)](https://arxiv.org/pdf/2601.03281))
 
 ---
 
